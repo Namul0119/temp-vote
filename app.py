@@ -1,3 +1,6 @@
+import pandas as pd
+import csv
+import os
 import qrcode
 import base64
 from io import BytesIO
@@ -43,6 +46,68 @@ def generate_qr_code(url):
     img_str = base64.b64encode(buffer.getvalue()).decode()
 
     return img_str
+
+
+def is_feedback_already_saved(code, person_index):
+    if not os.path.exists("real_temperature_data.csv"):
+        return False
+
+    df = pd.read_csv("real_temperature_data.csv")
+
+    if "person_index" not in df.columns:
+        return False
+
+    saved = df[
+        (df["room_code"] == code) &
+        (df["person_index"] == person_index)
+    ]
+
+    return len(saved) > 0
+
+
+def save_real_feedback(code, person_index, feedback):
+    votes = get_room_votes(code)
+
+    best_temp, expected_satisfaction, temp_scores, predictions = predict_with_ai(votes)
+
+    file_exists = os.path.exists("real_temperature_data.csv")
+
+    user = votes[person_index - 1]
+
+    with open("real_temperature_data.csv", "a", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+
+        if not file_exists:
+            writer.writerow([
+                "room_code",
+                "person_index",
+                "sex",
+                "age_group",
+                "temp",
+                "recommended_temp",
+                "feels",
+                "clothes",
+                "activity",
+                "position",
+                "weight",
+                "feedback"
+            ])
+
+        writer.writerow([
+            code,
+            person_index,
+            user["sex"],
+            user["age_group"],
+            user["temp"],
+            best_temp,
+            user["feels"],
+            user["clothes"],
+            user["activity"],
+            user["position"],
+            user["weight"],
+            feedback
+        ])
+
 
 HTML = """
 <!DOCTYPE html>
@@ -528,35 +593,110 @@ HTML = """
     </div>
 
     <div style="margin-top:20px;">
-    <strong>👤 개인별 예상 결과</strong><br><br>
+        <strong>👥 전체 요약</strong><br><br>
 
-    {% for r in person_results %}
-    <div style="
-        background:#1a1f2b;
-        padding:10px;
-        margin-bottom:8px;
-        border-radius:8px;
-        text-align:center;
-    ">
-        {{ r }}
-    </div>
-        {% endfor %}
+        <div style="
+            background:#1a1f2b;
+            padding:14px;
+            border-radius:10px;
+            line-height:1.7;
+            color:#ddd;
+        ">
+            춥다 {{ cold_percent }}% / 괜찮다 {{ ok_percent }}% / 덥다 {{ hot_percent }}%
+        </div>
+
+        <details style="margin-top:18px; color:#aaa;">
+            <summary style="cursor:pointer; color:#62ffd5;">개인별 예상 결과 보기</summary>
+
+            {% for r in person_results %}
+            <div style="
+                background:#1a1f2b;
+                padding:10px;
+                margin-top:8px;
+                border-radius:8px;
+                text-align:center;
+            ">
+                {{ r }}
+            </div>
+            {% endfor %}
+        </details>
     </div>
 
     <!-- 기존 설명 -->
-    <div class="message">
-        {{ message }}<br>
-        {{ advice }}<br><br>
-        <strong>분석 근거</strong><br>
-        {{ reason }}
+    <div class="message" style="max-width:620px; margin:28px auto 0;">
+        <div style="font-size:18px; font-weight:bold; color:#fff; margin-bottom:10px;">
+            결과 해석
+        </div>
+
+        <div style="font-size:17px; line-height:1.7; color:#ddd;">
+            {{ message }}
+        </div>
+
+        <div style="margin-top:14px; font-size:16px; line-height:1.7; color:#62ffd5;">
+            {{ advice }}
+        </div>
+
+        <div style="
+            margin-top:20px;
+            padding:14px 18px;
+            background:#1a1f2b;
+            border-radius:10px;
+            color:#bbb;
+            font-size:14px;
+            line-height:1.6;
+        ">
+            <strong style="color:#fff;">분석 근거</strong><br>
+            {{ reason }}
+        </div>
     </div>
 
-    <br><br>
-        <a href="/"><button>다시 예측하기</button></a>
-    </div>
+    {% if code %}
+    <div style="margin-top:35px;">
+        <p style="margin-top:24px; color:#66ffd1; font-size:16px; font-weight:bold;">
+            피드백을 반영하면 다음 추천 온도는 {{ next_temp }}°C입니다.
+        </p>
+        <h3>내 추천 온도 피드백</h3>
+
+        {% if my_result %}
+        <form method="post" action="{{ url_for('feedback', code=code) }}">
+            <div style="
+                background:#1a1f2b;
+                padding:15px;
+                margin-bottom:12px;
+                border-radius:10px;
+                text-align:left;
+            ">
+                <strong>{{ person_index }}번 사람</strong><br>
+                <span style="color:#aaa;">{{ my_result }}</span><br><br>
+
+                <label>
+                    <input type="radio" name="feedback" value="too_cold" required>
+                    추웠어요
+                </label>
+
+                <label style="margin-left:15px;">
+                    <input type="radio" name="feedback" value="good">
+                    괜찮았어요
+                </label>
+
+                <label style="margin-left:15px;">
+                    <input type="radio" name="feedback" value="too_hot">
+                    더웠어요
+                </label>
+            </div>
+
+            <button type="submit">피드백 저장하기</button>
+        </form>
+        {% else %}
+        <p style="color:#aaa;">방장은 전체 결과만 확인할 수 있습니다.</p>
+        {% endif %}
+
+            <br><br>
+                <a href="/"><button>다시 예측하기</button></a>
+            </div>
+            {% endif %}
+        </div>
     {% endif %}
-</div>
-
 <script>
 function showPerson(index) {
     const blocks = document.querySelectorAll('.person-block');
@@ -713,9 +853,12 @@ def room(code):
             "position": position
         }
 
+        person_index = len(get_room_votes(code)) + 1
+
         add_vote(code, vote)
 
         session[joined_key] = True
+        session[f"person_index_{code}"] = person_index
 
         if is_room_complete(code):
             return redirect(url_for("result", code=code))
@@ -878,6 +1021,12 @@ def result(code):
             msg = f"{i+1}번 사람 → 만족 가능성 높음"
         person_results.append(msg)
 
+    person_index = session.get(f"person_index_{code}")
+    my_result = None
+
+    if person_index:
+        my_result = person_results[person_index - 1]
+
     cold_count = sum(1 for user in votes if user["feels"] == "cold")
     hot_count = sum(1 for user in votes if user["feels"] == "hot")
     ok_count = sum(1 for user in votes if user["feels"] == "ok")
@@ -894,14 +1043,22 @@ def result(code):
     reason = f"춥다고 느낀 사람 {cold_count}명, 덥다고 느낀 사람 {hot_count}명, 에어컨 근처 사용자 {ac_count}명을 반영했습니다. 선호 온도 차이는 {temp_gap}도입니다."
 
     if expected_satisfaction < 0.5:
-        message = "사용자들의 선호 차이가 커서 모두가 만족하기 어려운 상태입니다."
-        advice = "온도 조정보다 자리 이동, 담요, 바람 방향 조정 같은 보조 조치가 필요할 수 있습니다."
+        message = f"{result}°C가 가장 균형 잡힌 온도이지만, 선호 차이가 커서 모두가 만족하기는 어렵습니다."
+
+        if cold_count > hot_count:
+            advice = "추위를 느끼는 사용자가 더 많습니다. 온도를 조금 올리거나, 에어컨 바람을 직접 맞는 사용자의 자리를 조정하는 것이 좋습니다."
+        elif hot_count > cold_count:
+            advice = "더위를 느끼는 사용자가 더 많습니다. 온도를 조금 낮추거나, 더운 사용자가 바람이 잘 닿는 자리로 이동하는 것이 좋습니다."
+        else:
+            advice = "추운 사용자와 더운 사용자가 비슷합니다. 온도 변경보다는 담요, 자리 이동, 바람 방향 조정 같은 보조 조치가 더 적합합니다."
+
     elif expected_satisfaction < 0.7:
-        message = "어느 정도 타협 가능한 온도이지만 일부 사용자는 불편할 수 있습니다."
-        advice = "현재 추천 온도를 기준으로 0.5~1도 정도 미세 조정해보는 것이 좋습니다."
+        message = f"{result}°C는 어느 정도 타협 가능한 온도입니다. 다만 일부 사용자는 불편할 수 있습니다."
+        advice = "추천 온도를 바로 크게 바꾸기보다는 0.5~1°C 정도만 미세 조정하면서 반응을 확인하는 것이 좋습니다."
+
     else:
-        message = "현재 입력 기준으로 비교적 많은 사용자가 만족할 가능성이 높습니다."
-        advice = "추천 온도를 적용해도 무리가 적은 상태입니다."
+        message = f"{result}°C는 현재 입력 기준에서 대부분의 사용자가 만족할 가능성이 높은 온도입니다."
+        advice = "추천 온도를 적용해도 무리가 적습니다. 다만 시간이 지나면 활동량이나 자리 위치에 따라 체감이 달라질 수 있습니다."
 
     chart_dots = []
     points = []
@@ -921,8 +1078,16 @@ def result(code):
 
     chart_points = " ".join(points)
 
+    next_temp = result
+
+    if cold_count > hot_count:
+        next_temp = min(result + 1, 30)
+    elif hot_count > cold_count:
+        next_temp = max(result - 1, 18)
+
     return render_template_string(
         HTML,
+        code=code,
         result=result,
         satisfaction=satisfaction,
         message=message,
@@ -934,8 +1099,71 @@ def result(code):
         hot_percent=hot_percent,
         temp_scores=temp_scores,
         chart_points=chart_points,
-        chart_dots=chart_dots
+        chart_dots=chart_dots,
+        next_temp=next_temp,
+        person_index=person_index,
+        my_result=my_result
     )
+
+@app.route("/feedback/<code>", methods=["POST"])
+def feedback(code):
+    person_index = session.get(f"person_index_{code}")
+
+    if not person_index:
+        return render_template_string("""
+        <html>
+        <head><meta charset="UTF-8"></head>
+        <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
+            <h1>피드백을 저장할 수 없습니다</h1>
+            <p style="color:#aaa;">참여자 정보가 확인되지 않습니다.</p>
+            <a href="/"><button>새 방 만들기</button></a>
+        </body>
+        </html>
+        """)
+
+    if is_feedback_already_saved(code, person_index):
+        return render_template_string("""
+        <html>
+        <head><meta charset="UTF-8"></head>
+        <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
+            <h1>이미 피드백이 저장되었습니다</h1>
+            <p style="color:#aaa;">같은 참여자는 한 번만 피드백을 남길 수 있습니다.</p>
+            <a href="/"><button>새 방 만들기</button></a>
+        </body>
+        </html>
+        """)
+
+    user_feedback = request.form["feedback"]
+
+    save_real_feedback(code, person_index, user_feedback)
+
+    votes = get_room_votes(code)
+    best_temp, expected_satisfaction, temp_scores, predictions = predict_with_ai(votes)
+
+    return render_template_string("""
+    <html>
+    <head>
+    <meta charset="UTF-8">
+    <title>피드백 저장 완료</title>
+    </head>
+    <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
+        <h1>피드백이 저장되었습니다</h1>
+        <p style="color:#aaa;">내 반응 데이터가 저장되었습니다.</p>
+
+        <p style="margin-top:25px; font-size:24px; color:#66ffd1; font-weight:bold;">
+            다음 추천 온도: {{ next_temp }}°C
+        </p>
+
+        <br>
+
+        <a href="/">
+            <button style="padding:14px 28px; background:#2f6df6; color:white; border:none; border-radius:6px;">
+                새 방 만들기
+            </button>
+        </a>
+    </body>
+    </html>
+    """, next_temp=best_temp)
 
 @app.route("/")
 def home():
@@ -1064,7 +1292,7 @@ def index():
         hot_percent=hot_percent,
         temp_scores=temp_scores,
         chart_points=chart_points,
-        chart_dots=chart_dots
+        chart_dots=chart_dots,
     )
 
 

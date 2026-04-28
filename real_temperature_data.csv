@@ -1,0 +1,4 @@
+room_code,person_index,sex,age_group,temp,recommended_temp,feels,clothes,activity,position,weight,feedback
+J8AQOX,1,male,teen,21,24,hot,thin,still,window,1.32,good
+J8AQOX,3,female,teen,23,24,ok,normal,move,window,1.32,too_hot
+J8AQOX,2,female,teen,25,24,cold,thin,still,ac,1.56,good

@@ -23,7 +23,7 @@ def predict_with_ai(votes):
     best_temp = None
     best_score = -1
     best_predictions = None
-    temp_scores = []  # ✅ 이게 빠져 있었음
+    temp_scores = []
 
     feedback_classes = list(encoders["feedback"].classes_)
     good_index = feedback_classes.index("good")
@@ -39,12 +39,16 @@ def predict_with_ai(votes):
         probabilities = model.predict_proba(df)
 
         good_scores = [prob[good_index] for prob in probabilities]
+
         avg_good_score = sum(good_scores) / len(good_scores)
+        worst_good_score = min(good_scores)
 
-        temp_scores.append(round(avg_good_score * 100, 2))  # ✅ 그래프용 점수 저장
+        final_score = (avg_good_score * 0.7) + (worst_good_score * 0.3)
 
-        if avg_good_score > best_score:
-            best_score = avg_good_score
+        temp_scores.append(round(final_score * 100, 2))
+
+        if final_score > best_score:
+            best_score = final_score
             best_temp = candidate_temp
             best_predictions = model.predict(df)
 
