@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 import csv
 import os
@@ -90,7 +91,8 @@ def save_real_feedback(code, person_index, feedback):
                 "activity",
                 "position",
                 "weight",
-                "feedback"
+                "feedback",
+                "timestamp"
             ])
 
         writer.writerow([
@@ -105,7 +107,8 @@ def save_real_feedback(code, person_index, feedback):
             user["activity"],
             user["position"],
             user["weight"],
-            feedback
+            feedback,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ])
 
 
@@ -114,6 +117,11 @@ HTML = """
 <html>
 <head>
 <meta charset="UTF-8">
+
+{% if result %}
+<meta http-equiv="refresh" content="5">
+{% endif %}
+
 <title>집단 온도 추천 AI</title>
 
 <style>
@@ -502,19 +510,27 @@ HTML = """
     <div class="big-temp">{{ result }}°C</div>
     <div class="satisfaction">예상 만족도 {{ satisfaction }}%</div>
 
+    <div style="color:#888; font-size:14px; margin-top:6px;">
+        (AI 예측 기반)
+    </div>
+
+    <div style="margin-top:8px; color:#aaa; font-size:15px;">
+        현재 참여 {{ current }} / {{ target }}명
+    </div>
+
     {% if satisfaction < 50 %}
     <div class="warning-box">
         ⚠️ 집단 선호 차이가 큽니다<br>
-        온도만으로 해결하기 어려운 상태입니다
+        온도 조정만으로 해결하기 어려운 상태입니다
     </div>
     {% endif %}
 
-    <div style="margin-top:18px; font-size:20px; color:#62ffd5; font-weight:bold;">
-        → 이 환경에서는 {{ result }}°C가 가장 균형 잡힌 온도입니다
+    <div style="margin-top:10px; color:#aaa; font-size:15px;">
+        {{ short_reason }}
     </div>
 
-    <div style="margin-top:8px; color:#aaa; font-size:16px;">
-        AI 신뢰도: {{ satisfaction }}%
+    <div style="color:#aaa; font-size:13px; margin-top:4px;">
+        상황에 따라 체감 온도는 달라질 수 있습니다
     </div>
 
     <div style="
@@ -806,26 +822,7 @@ def room(code):
     joined_key = f"joined_{code}"
 
     if joined_key in session:
-        return render_template_string("""
-        <html>
-        <head>
-        <meta charset="UTF-8">
-        <title>이미 입력 완료</title>
-        </head>
-        <body style="background:#101114; color:white; font-family:Arial; text-align:center; padding-top:120px;">
-            <h1>이미 입력을 완료했습니다</h1>
-            <p style="color:#aaa;">같은 방에는 한 번만 참여할 수 있습니다.</p>
-
-            <br>
-
-            <a href="{{ url_for('result', code=code) }}">
-                <button style="padding:14px 28px; font-size:18px; background:#2f6df6; color:white; border:none; border-radius:6px;">
-                    결과 확인하기
-                </button>
-            </a>
-        </body>
-        </html>
-        """, code=code)
+        return redirect(url_for("result", code=code))
 
     if request.method == "POST":
         temp = int(request.form["temp"])
@@ -860,8 +857,7 @@ def room(code):
         session[joined_key] = True
         session[f"person_index_{code}"] = person_index
 
-        if is_room_complete(code):
-            return redirect(url_for("result", code=code))
+        return redirect(url_for("result", code=code))
 
     current, target = get_room_status(code)
 
@@ -993,12 +989,116 @@ def result(code):
         <head>
         <meta charset="UTF-8">
         <meta http-equiv="refresh" content="2">
-        <title>결과 대기 중</title>
+        <title>결과 분석 중</title>
+
+        <style>
+            body {
+                margin: 0;
+                height: 100vh;
+                background:
+                    radial-gradient(circle at center, rgba(98,255,213,0.08), transparent 35%),
+                    #08090c;
+                color: white;
+                font-family: Arial, sans-serif;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .formula {
+                position: absolute;
+                color: rgba(255,255,255,0.10);
+                font-size: 34px;
+                font-family: Georgia, serif;
+                filter: blur(0.3px);
+            }
+
+            .f1 { top: 8%; left: 8%; }
+            .f2 { top: 12%; right: 12%; }
+            .f3 { top: 36%; left: 6%; }
+            .f4 { bottom: 14%; right: 10%; }
+            .f5 { bottom: 10%; left: 14%; }
+
+            .loader {
+                width: 120px;
+                height: 120px;
+                border: 14px solid rgba(255,255,255,0.18);
+                border-top: 14px solid #62ffd5;
+                border-radius: 50%;
+                margin: 35px auto;
+                animation: spin 1.2s linear infinite;
+                box-shadow: 0 0 35px rgba(98,255,213,0.35);
+            }
+
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+
+            .title {
+                color: #62ffd5;
+                font-size: 20px;
+                font-weight: bold;
+                margin-bottom: 16px;
+            }
+
+            h1 {
+                font-size: 42px;
+                margin: 0;
+            }
+
+            .status {
+                font-size: 24px;
+                margin-top: 20px;
+                color: #62ffd5;
+                font-weight: bold;
+            }
+
+            .desc {
+                max-width: 760px;
+                margin: 30px auto 0;
+                color: #d6d6d6;
+                font-size: 18px;
+                line-height: 1.8;
+            }
+
+            .desc strong {
+                color: #62ffd5;
+            }
+
+            .small {
+                margin-top: 18px;
+                color: #aaa;
+                font-size: 15px;
+            }
+        </style>
         </head>
-        <body style="background:#101114; color:white; font-family:Arial; text-align:center; padding-top:120px;">
-            <h1>아직 결과를 계산할 수 없습니다</h1>
-            <p style="font-size:24px;">{{ current }}/{{ target }}명 참여 완료</p>
-            <p style="color:#aaa;">모든 사람이 입력을 완료하면 자동으로 결과가 표시됩니다.</p>
+
+        <body>
+            <div class="formula f1">T = argmax Σ Sᵢ(T)</div>
+            <div class="formula f2">P(good | x)</div>
+            <div class="formula f3">Sᵢ = f(temp, clothes, activity)</div>
+            <div class="formula f4">ŷ = hθ(x)</div>
+            <div class="formula f5">x₁, x₂, ... , xₙ</div>
+
+            <div>
+                <div class="title">집단 온도 추천 AI</div>
+                <h1>참여 데이터를 기다리는 중입니다</h1>
+
+                <div class="loader"></div>
+
+                <div class="status">{{ current }}/{{ target }}명 참여 완료</div>
+
+                <div class="desc">
+                    사용자의 체감 온도, 선호 온도, 옷차림, 활동량, 위치 데이터를 수집하고 있습니다.<br>
+                    수집된 데이터를 기반으로 <strong>머신러닝 알고리즘</strong>이 집단이 가장 만족할 가능성이 높은 온도를 예측합니다.
+                </div>
+
+                <div class="small">
+                    모든 사람이 입력을 완료하면 자동으로 결과 화면으로 이동합니다.
+                </div>
+            </div>
         </body>
         </html>
         """, current=current, target=target)
@@ -1042,8 +1142,15 @@ def result(code):
 
     reason = f"춥다고 느낀 사람 {cold_count}명, 덥다고 느낀 사람 {hot_count}명, 에어컨 근처 사용자 {ac_count}명을 반영했습니다. 선호 온도 차이는 {temp_gap}도입니다."
 
+    if cold_count > hot_count:
+        short_reason = "추위를 느끼는 사용자가 더 많아 온도를 높이는 방향을 고려했습니다."
+    elif hot_count > cold_count:
+        short_reason = "더위를 느끼는 사용자가 더 많아 온도를 낮추는 방향을 고려했습니다."
+    else:
+        short_reason = "추위와 더위 의견이 비슷해 가장 균형 잡힌 온도를 선택했습니다."
+
     if expected_satisfaction < 0.5:
-        message = f"{result}°C가 가장 균형 잡힌 온도이지만, 선호 차이가 커서 모두가 만족하기는 어렵습니다."
+        message = "선호 차이가 커 일부 사용자 불편 가능"
 
         if cold_count > hot_count:
             advice = "추위를 느끼는 사용자가 더 많습니다. 온도를 조금 올리거나, 에어컨 바람을 직접 맞는 사용자의 자리를 조정하는 것이 좋습니다."
@@ -1053,11 +1160,11 @@ def result(code):
             advice = "추운 사용자와 더운 사용자가 비슷합니다. 온도 변경보다는 담요, 자리 이동, 바람 방향 조정 같은 보조 조치가 더 적합합니다."
 
     elif expected_satisfaction < 0.7:
-        message = f"{result}°C는 어느 정도 타협 가능한 온도입니다. 다만 일부 사용자는 불편할 수 있습니다."
+        message = "대체로 괜찮지만 일부 불편 가능"
         advice = "추천 온도를 바로 크게 바꾸기보다는 0.5~1°C 정도만 미세 조정하면서 반응을 확인하는 것이 좋습니다."
 
     else:
-        message = f"{result}°C는 현재 입력 기준에서 대부분의 사용자가 만족할 가능성이 높은 온도입니다."
+        message = "대부분 사용자 만족 가능"
         advice = "추천 온도를 적용해도 무리가 적습니다. 다만 시간이 지나면 활동량이나 자리 위치에 따라 체감이 달라질 수 있습니다."
 
     chart_dots = []
@@ -1090,9 +1197,12 @@ def result(code):
         code=code,
         result=result,
         satisfaction=satisfaction,
+        current=current,
+        target=target,
         message=message,
         advice=advice,
         reason=reason,
+        short_reason=short_reason,
         person_results=person_results,
         cold_percent=cold_percent,
         ok_percent=ok_percent,
@@ -1136,6 +1246,18 @@ def feedback(code):
     user_feedback = request.form["feedback"]
 
     save_real_feedback(code, person_index, user_feedback)
+
+    import pandas as pd
+    import subprocess
+    import threading
+
+    df = pd.read_csv("real_temperature_data.csv")
+
+    def retrain_model():
+        subprocess.run(["python", "train_model.py"])
+
+    if len(df) % 10 == 0:
+        threading.Thread(target=retrain_model).start()
 
     votes = get_room_votes(code)
     best_temp, expected_satisfaction, temp_scores, predictions = predict_with_ai(votes)

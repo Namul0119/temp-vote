@@ -1,3 +1,4 @@
 __pycache__/
 *.pyc
 *.pkl
+real_temperature_data.csv

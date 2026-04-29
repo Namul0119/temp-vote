@@ -1,3 +1,4 @@
+from datetime import datetime
 import joblib
 import pandas as pd
 
@@ -15,7 +16,8 @@ def encode_user_for_temp(user, candidate_temp):
         "clothes": encoders["clothes"].transform([user["clothes"]])[0],
         "activity": encoders["activity"].transform([user["activity"]])[0],
         "position": encoders["position"].transform([user["position"]])[0],
-        "weight": user["weight"]
+        "weight": user["weight"],
+        "hour": datetime.now().hour
     }
 
 

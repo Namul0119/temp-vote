@@ -7,7 +7,46 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 
 
-df = pd.read_csv("temperature_data.csv")
+base_df = pd.read_csv("temperature_data.csv")
+base_df["hour"] = 12
+
+try:
+    real_df = pd.read_csv("real_temperature_data.csv")
+
+    real_df["timestamp"] = pd.to_datetime(real_df["timestamp"])
+    real_df["hour"] = real_df["timestamp"].dt.hour
+
+    real_df = real_df.rename(columns={
+        "temp": "preferred_temp",
+        "recommended_temp": "candidate_temp"
+    })
+
+    real_df = real_df[
+        [
+            "sex",
+            "age_group",
+            "preferred_temp",
+            "candidate_temp",
+            "feels",
+            "clothes",
+            "activity",
+            "position",
+            "weight",
+            "feedback",
+            "hour"
+        ]
+    ]
+
+    df = pd.concat([base_df, real_df], ignore_index=True)
+
+    print("===== 실제 피드백 데이터 반영 =====")
+    print("기본 데이터:", len(base_df))
+    print("실제 데이터:", len(real_df))
+    print("전체 데이터:", len(df))
+
+except FileNotFoundError:
+    df = base_df
+    print("실제 피드백 데이터 없음 → 기본 데이터만 사용")
 
 print("===== feedback 분포 =====")
 print(df["feedback"].value_counts())
@@ -28,7 +67,8 @@ feature_columns = [
     "clothes",
     "activity",
     "position",
-    "weight"
+    "weight",
+    "hour"
 ]
 
 X = df[feature_columns]
