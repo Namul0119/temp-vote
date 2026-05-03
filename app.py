@@ -682,7 +682,7 @@ HTML = """
                 border-radius:10px;
                 text-align:left;
             ">
-                <strong>{{ person_index }}번 사람</strong><br>
+                <strong>{{ my_name }}</strong><br>
                 <span style="color:#aaa;">{{ my_result }}</span><br><br>
 
                 <label>
@@ -825,6 +825,7 @@ def room(code):
         return redirect(url_for("result", code=code))
 
     if request.method == "POST":
+        name = request.form["name"].strip()
         temp = int(request.form["temp"])
         clothes = request.form["clothes"]
         feels = request.form["feels"]
@@ -839,7 +840,13 @@ def room(code):
             * get_position_weight(position)
         )
 
+        person_index = len(get_room_votes(code)) + 1
+
+        if name == "":
+            name = f"{person_index}번 사람"
+
         vote = {
+            "name": name,
             "sex": sex,
             "age_group": age_group,
             "temp": temp,
@@ -849,8 +856,6 @@ def room(code):
             "activity": activity,
             "position": position
         }
-
-        person_index = len(get_room_votes(code)) + 1
 
         add_vote(code, vote)
 
@@ -932,6 +937,7 @@ def room(code):
         </div>
 
         <form method="post">
+            <input type="text" name="name" placeholder="이름 또는 닉네임" required>
 
             <select name="sex">
                 <option value="male">남성</option>
@@ -1112,20 +1118,27 @@ def result(code):
     satisfaction = round(expected_satisfaction * 100, 1)
 
     person_results = []
+
     for i, fb in enumerate(feedback_labels):
+
+        display_name = votes[i].get("name", f"{i+1}번 사람")
+
         if fb == "too_cold":
-            msg = f"{i+1}번 사람 → 추울 가능성 높음"
+            msg = f"{display_name} → 추울 가능성 높음"
         elif fb == "too_hot":
-            msg = f"{i+1}번 사람 → 더울 가능성 높음"
+            msg = f"{display_name} → 더울 가능성 높음"
         else:
-            msg = f"{i+1}번 사람 → 만족 가능성 높음"
+            msg = f"{display_name} → 만족 가능성 높음"
+
         person_results.append(msg)
 
     person_index = session.get(f"person_index_{code}")
     my_result = None
+    my_name = None
 
     if person_index:
         my_result = person_results[person_index - 1]
+        my_name = votes[person_index - 1].get("name", f"{person_index}번 사람")
 
     cold_count = sum(1 for user in votes if user["feels"] == "cold")
     hot_count = sum(1 for user in votes if user["feels"] == "hot")
@@ -1212,7 +1225,8 @@ def result(code):
         chart_dots=chart_dots,
         next_temp=next_temp,
         person_index=person_index,
-        my_result=my_result
+        my_result=my_result,
+        my_name=my_name
     )
 
 @app.route("/feedback/<code>", methods=["POST"])

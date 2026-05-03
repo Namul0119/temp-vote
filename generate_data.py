@@ -83,15 +83,40 @@ def generate_person():
 
 
 def generate_feedback(user, candidate_temp):
-    preferred_temp = user["preferred_temp"]
-    diff = candidate_temp - preferred_temp
+    preferred = user["preferred_temp"]
+    feels = user["feels"]
+    weight = user["weight"]
 
-    if diff <= -2:
-        return "too_cold"
-    elif diff >= 2:
-        return "too_hot"
+    diff = candidate_temp - preferred
+
+    # 기본 불쾌도
+    discomfort = abs(diff)
+
+    # 추위/더위 민감도 차이
+    if diff < 0:
+        discomfort *= 1.5  # 추위 더 민감
     else:
-        return "good"
+        discomfort *= 1.0
+
+    # 현재 상태 반영
+    if feels == "cold":
+        discomfort *= 1.3
+    elif feels == "hot":
+        discomfort *= 1.1
+
+    # 개인 특성 반영
+    discomfort *= weight
+
+    # 확률 기반 판단 (핵심)
+    if discomfort < 1.5:
+        return random.choices(["good", "too_hot", "too_cold"], [0.7, 0.15, 0.15])[0]
+    elif discomfort < 3:
+        return random.choices(["good", "too_hot", "too_cold"], [0.4, 0.3, 0.3])[0]
+    else:
+        if diff > 0:
+            return "too_hot"
+        else:
+            return "too_cold"
 
 
 def generate_room_data(room_count=100, people_per_room=5):

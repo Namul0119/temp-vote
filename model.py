@@ -54,4 +54,24 @@ def predict_with_ai(votes):
             best_temp = candidate_temp
             best_predictions = model.predict(df)
 
+    if best_temp is not None:
+        avg_input_temp = sum(user["temp"] for user in votes) / len(votes)
+
+        cold_count = sum(1 for user in votes if user["feels"] == "cold")
+        hot_count = sum(1 for user in votes if user["feels"] == "hot")
+
+        # 1차: 평균 기준 ±2도 안으로 제한
+        min_allowed = round(avg_input_temp - 2)
+        max_allowed = round(avg_input_temp + 2)
+        best_temp = max(min_allowed, min(best_temp, max_allowed))
+
+        # 2차: 현재 체감 방향 반영
+        if hot_count > cold_count:
+            # 더운 사람이 많으면 평균보다 최소 1도 낮게
+            best_temp = min(best_temp, round(avg_input_temp - 1))
+
+        elif cold_count > hot_count:
+            # 추운 사람이 많으면 평균보다 최소 1도 높게
+            best_temp = max(best_temp, round(avg_input_temp + 1))
+
     return best_temp, best_score, temp_scores, best_predictions
