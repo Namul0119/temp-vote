@@ -10,6 +10,8 @@ from model import predict_with_ai, encoders
 from rooms import create_room, add_vote, is_room_complete, get_room_votes, get_room_status
 import random
 import string
+import subprocess
+import threading
 
 app = Flask(__name__)
 app.secret_key = "temp-vote-secret-key"
@@ -673,7 +675,7 @@ HTML = """
         </p>
         <h3>내 추천 온도 피드백</h3>
 
-        {% if my_result %}
+        {% if my_result and not is_host %}
         <form method="post" action="{{ url_for('feedback', code=code) }}">
             <div style="
                 background:#1a1f2b;
@@ -1133,6 +1135,8 @@ def result(code):
         person_results.append(msg)
 
     person_index = session.get(f"person_index_{code}")
+    is_host = f"joined_{code}" not in session
+
     my_result = None
     my_name = None
 
@@ -1226,7 +1230,8 @@ def result(code):
         next_temp=next_temp,
         person_index=person_index,
         my_result=my_result,
-        my_name=my_name
+        my_name=my_name,
+        is_host=is_host
     )
 
 @app.route("/feedback/<code>", methods=["POST"])
@@ -1260,10 +1265,6 @@ def feedback(code):
     user_feedback = request.form["feedback"]
 
     save_real_feedback(code, person_index, user_feedback)
-
-    import pandas as pd
-    import subprocess
-    import threading
 
     df = pd.read_csv("real_temperature_data.csv")
 
@@ -1305,6 +1306,10 @@ def feedback(code):
 def home():
     return redirect(url_for("create"))
 
+# =========================
+# 예전 5인 고정 테스트용 페이지
+# 현재 실제 room 시스템에서는 사용하지 않음
+# =========================
 @app.route("/vote", methods=["GET", "POST"])
 def index():
     result = None
