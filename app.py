@@ -580,13 +580,13 @@ HTML = """
 
             {% for point in chart_dots %}
                 <circle
-                    class="ai-dot {% if point.temp == result %}best{% endif %}"
+                    class="ai-dot {% if point.temp == best_chart_temp %}best{% endif %}"
                     cx="{{ point.x }}"
                     cy="{{ point.y }}"
-                    r="{% if point.temp == result %}7{% else %}5{% endif %}">
+                    r="{% if point.temp == best_chart_temp %}7{% else %}5{% endif %}">
                 </circle>
 
-                {% if point.temp == result %}
+                {% if point.temp == best_chart_temp %}
                     <text x="{{ point.x }}" y="{{ point.y - 18 }}" fill="#62ffd5" font-size="18" text-anchor="middle">
                         ★
                     </text>
@@ -607,7 +607,7 @@ HTML = """
         margin-top:8px;
         text-align:center;
     ">
-        ★ 가장 높은 점 = 최적 온도
+        ★ 최종 추천 온도
     </div>
 
     <div style="margin-top:20px;">
@@ -665,6 +665,12 @@ HTML = """
         ">
             <strong style="color:#fff;">분석 근거</strong><br>
             {{ reason }}
+
+            <div style="margin-top:12px;">
+                {% for point in analysis_points %}
+                    <div style="margin-top:6px;">✔ {{ point }}</div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
@@ -1159,6 +1165,33 @@ def result(code):
 
     reason = f"춥다고 느낀 사람 {cold_count}명, 덥다고 느낀 사람 {hot_count}명, 에어컨 근처 사용자 {ac_count}명을 반영했습니다. 선호 온도 차이는 {temp_gap}도입니다."
 
+    temps = [user["temp"] for user in votes]
+    temp_gap = max(temps) - min(temps)
+    avg_temp = round(sum(temps) / len(temps), 1)
+
+    analysis_points = []
+
+    if cold_count > hot_count:
+        analysis_points.append("추위를 느끼는 사용자가 더 많습니다.")
+
+    elif hot_count > cold_count:
+        analysis_points.append("더위를 느끼는 사용자가 더 많습니다.")
+
+    else:
+        analysis_points.append("추위와 더위 의견이 비슷합니다.")
+
+    if ac_count > 0:
+        analysis_points.append(f"에어컨 근처 사용자가 {ac_count}명 있습니다.")
+
+    if temp_gap >= 4:
+        analysis_points.append(f"사용자 선호 온도 차이가 {temp_gap}°C로 큰 편입니다.")
+    else:
+        analysis_points.append(f"사용자 선호 온도 차이는 {temp_gap}°C입니다.")
+
+    analysis_points.append(f"평균 희망 온도는 {avg_temp}°C입니다.")
+
+    reason = f"춥다고 느낀 사람 {cold_count}명, 덥다고 느낀 사람 {hot_count}명, 에어컨 근처 사용자 {ac_count}명을 반영했습니다. 선호 온도 차이는 {temp_gap}도입니다."
+
     if cold_count > hot_count:
         short_reason = "추위를 느끼는 사용자가 더 많아 온도를 높이는 방향을 고려했습니다."
     elif hot_count > cold_count:
@@ -1183,6 +1216,8 @@ def result(code):
     else:
         message = "대부분 사용자 만족 가능"
         advice = "추천 온도를 적용해도 무리가 적습니다. 다만 시간이 지나면 활동량이나 자리 위치에 따라 체감이 달라질 수 있습니다."
+
+    best_chart_temp = temp_scores.index(max(temp_scores)) + 18
 
     chart_dots = []
     points = []
@@ -1227,11 +1262,13 @@ def result(code):
         temp_scores=temp_scores,
         chart_points=chart_points,
         chart_dots=chart_dots,
+        best_chart_temp=best_chart_temp,
         next_temp=next_temp,
         person_index=person_index,
         my_result=my_result,
         my_name=my_name,
-        is_host=is_host
+        is_host=is_host,
+        analysis_points=analysis_points
     )
 
 @app.route("/feedback/<code>", methods=["POST"])

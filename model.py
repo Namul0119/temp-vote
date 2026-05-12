@@ -71,7 +71,23 @@ def predict_with_ai(votes):
             best_temp = min(best_temp, round(avg_input_temp - 1))
 
         elif cold_count > hot_count:
-            # 추운 사람이 많으면 평균보다 최소 1도 높게
             best_temp = max(best_temp, round(avg_input_temp + 1))
+
+        # 보정된 최종 추천 온도 기준으로 예측값과 만족도 다시 계산
+        rows = []
+
+        for user in votes:
+            rows.append(encode_user_for_temp(user, best_temp))
+
+        final_df = pd.DataFrame(rows)
+
+        final_probabilities = model.predict_proba(final_df)
+        final_good_scores = [prob[good_index] for prob in final_probabilities]
+
+        avg_good_score = sum(final_good_scores) / len(final_good_scores)
+        worst_good_score = min(final_good_scores)
+
+        best_score = (avg_good_score * 0.7) + (worst_good_score * 0.3)
+        best_predictions = model.predict(final_df)
 
     return best_temp, best_score, temp_scores, best_predictions
