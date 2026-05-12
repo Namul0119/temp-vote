@@ -96,6 +96,10 @@ pred = model.predict(X_test)
 print()
 print("===== 모델 평가 =====")
 print("정확도:", round(accuracy_score(Y_test, pred) * 100, 2), "%")
+accuracy = round(accuracy_score(Y_test, pred) * 100, 2)
+
+with open("model_accuracy.txt", "w", encoding="utf-8") as file:
+    file.write(str(accuracy))
 
 print()
 print("===== 상세 평가 =====")

@@ -1741,6 +1741,14 @@ def admin():
     temp_stats = cursor.fetchall()
 
     cursor.execute("""
+    SELECT substr(timestamp, 12, 2) AS hour, COUNT(*)
+    FROM feedback_logs
+    GROUP BY hour
+    ORDER BY hour
+    """)
+    hour_stats = cursor.fetchall()
+
+    cursor.execute("""
     SELECT
         room_code,
         sex,
@@ -1755,6 +1763,27 @@ def admin():
     """)
 
     recent_logs = cursor.fetchall()
+
+    import pandas as pd
+
+    if os.path.exists("real_temperature_data.csv"):
+        df = pd.read_csv("real_temperature_data.csv")
+
+        ai_data_count = len(df)
+
+        remain_for_train = 10 - (ai_data_count % 10)
+
+        if remain_for_train == 10:
+            remain_for_train = 0
+    else:
+        ai_data_count = 0
+        remain_for_train = 10
+
+    if os.path.exists("model_accuracy.txt"):
+        with open("model_accuracy.txt", "r", encoding="utf-8") as file:
+            model_accuracy = file.read()
+    else:
+        model_accuracy = "0"
 
     conn.close()
 
@@ -1813,6 +1842,67 @@ def admin():
     <h1>관리자 통계 페이지</h1>
 
     <div class="card">
+        <h2>AI 모델 성능</h2>
+
+        <p style="
+        font-size:30px;
+        color:#66ffd1;
+        font-weight:bold;
+        margin-top:20px;
+        ">
+            {{ model_accuracy }}%
+        </p>
+
+        <p style="
+        color:#aaa;
+        margin-top:10px;
+        ">
+            현재 AI 예측 정확도
+        </p>
+
+        <div style="
+        margin-top:16px;
+        color:#66ffd1;
+        font-size:14px;
+        ">
+            ✔ 최근 재학습 상태 정상
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>AI 학습 상태</h2>
+
+        <p style="font-size:22px; color:#66ffd1; font-weight:bold;">
+            현재 학습 데이터: {{ ai_data_count }}개
+        </p>
+
+        <p style="color:#aaa; margin-top:10px;">
+            다음 자동 재학습까지 {{ remain_for_train }}개 남음
+        </p>
+
+        <div style="
+            margin-top:18px;
+            width:100%;
+            height:18px;
+            background:#11151f;
+            border-radius:20px;
+            overflow:hidden;
+        ">
+            <div style="
+                width:{{ ((ai_data_count % 10) * 10) }}%;
+                height:100%;
+                background:linear-gradient(90deg, #00e5a8, #66ffd1);
+                transition:width 0.6s ease;
+            ">
+            </div>
+        </div>
+
+        <p style="margin-top:8px; color:#888; font-size:13px;">
+            데이터가 10개 누적될 때마다 자동 재학습됩니다
+        </p>
+    </div>
+
+    <div class="card">
         <h2>전체 피드백 수</h2>
         <h1>{{ total_count }}</h1>
     </div>
@@ -1839,6 +1929,16 @@ def admin():
         {% endfor %}
 
         <canvas id="tempChart" style="margin-top:20px;"></canvas>
+    </div>
+
+    <div class="card">
+        <h2>시간대별 피드백 수</h2>
+
+        {% for stat in hour_stats %}
+            <p>{{ stat[0] }}시 : {{ stat[1] }}개</p>
+        {% endfor %}
+
+        <canvas id="hourChart" style="margin-top:20px;"></canvas>
     </div>
 
     <div class="card">
@@ -2009,6 +2109,72 @@ def admin():
             }
         });
 
+        const hourLabels = [
+            {% for stat in hour_stats %}
+                "{{ stat[0] }}시",
+            {% endfor %}
+        ];
+
+        const hourCounts = [
+            {% for stat in hour_stats %}
+                {{ stat[1] }},
+            {% endfor %}
+        ];
+
+        const hourCtx = document.getElementById("hourChart");
+
+        new Chart(hourCtx, {
+            type: "line",
+
+            data: {
+                labels: hourLabels,
+
+                datasets: [{
+                    label: "시간대별 피드백 수",
+                    data: hourCounts,
+                    borderColor: "#66ffd1",
+                    backgroundColor: "rgba(102, 255, 209, 0.15)",
+                    tension: 0.35,
+                    fill: true,
+                    pointRadius: 5,
+                    pointBackgroundColor: "#66ffd1"
+                }]
+            },
+
+            options: {
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "white"
+                        }
+                    }
+                },
+
+                scales: {
+                    x: {
+                        ticks: {
+                            color: "white"
+                        },
+                        grid: {
+                            color: "#333"
+                        }
+                    },
+
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: 5,
+
+                        ticks: {
+                            color: "white"
+                        },
+                        grid: {
+                            color: "#333"
+                        }
+                    }
+                }
+            }
+        });
+
         </script>
 
     </div>
@@ -2019,7 +2185,11 @@ def admin():
     total_count=total_count,
     feedback_stats=feedback_stats,
     temp_stats=temp_stats,
-    recent_logs=recent_logs)
+    hour_stats=hour_stats,
+    recent_logs=recent_logs,
+    ai_data_count=ai_data_count,
+    remain_for_train=remain_for_train,
+    model_accuracy=model_accuracy)
 
 @app.route("/")
 def home():
