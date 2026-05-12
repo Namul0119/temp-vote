@@ -939,6 +939,48 @@ def room(code):
         return redirect(url_for("result", code=code))
 
     if request.method == "POST":
+        current, target = get_room_status(code)
+
+        if current >= target:
+            return render_template_string("""
+            <html>
+            <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+
+            <body style="
+            background:#101114;
+            color:white;
+            text-align:center;
+            padding-top:120px;
+            font-family:sans-serif;
+            ">
+
+            <h1>참여가 마감되었습니다</h1>
+
+            <p style="color:#aaa;">
+            이미 모든 참여자가 입력을 완료했습니다.
+            </p>
+
+            <a href="/result/{{ code }}">
+                <button style="
+                margin-top:20px;
+                padding:14px 28px;
+                border:none;
+                border-radius:8px;
+                background:#2f6df6;
+                color:white;
+                font-size:16px;
+                cursor:pointer;
+                ">
+                    결과 보기
+                </button>
+            </a>
+
+            </body>
+            </html>
+            """, code=code)
         name = request.form["name"].strip()
         existing_names = [
             user.get("name", "").strip()
