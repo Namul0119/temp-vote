@@ -1,3 +1,4 @@
+import sqlite3
 from data_storage import init_db, save_feedback_to_db
 from datetime import datetime
 import pandas as pd
@@ -24,6 +25,8 @@ import threading
 
 app = Flask(__name__)
 app.secret_key = "temp-vote-secret-key"
+
+ADMIN_KEY = "temp-admin-2026"
 
 init_db()
 
@@ -1671,6 +1674,271 @@ def close_room(code):
     </body>
     </html>
     """)
+
+@app.route("/admin")
+def admin():
+
+    key = request.args.get("key")
+
+    if key != ADMIN_KEY:
+        return render_template_string("""
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>접근 제한</title>
+        </head>
+
+        <body style="
+        background:#101114;
+        color:white;
+        text-align:center;
+        padding-top:120px;
+        font-family:Arial;
+        ">
+
+        <h1>관리자 권한이 없습니다</h1>
+        <p style="color:#aaa;">올바른 관리자 키가 필요합니다.</p>
+
+        <a href="/">
+            <button style="
+            margin-top:20px;
+            padding:14px 28px;
+            border:none;
+            border-radius:8px;
+            background:#2f6df6;
+            color:white;
+            font-size:16px;
+            cursor:pointer;
+            ">
+                메인으로 돌아가기
+            </button>
+        </a>
+
+        </body>
+        </html>
+        """)
+
+    conn = sqlite3.connect("temperature_feedback.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM feedback_logs")
+    total_count = cursor.fetchone()[0]
+
+    cursor.execute("""
+    SELECT feedback, COUNT(*)
+    FROM feedback_logs
+    GROUP BY feedback
+    """)
+    feedback_stats = cursor.fetchall()
+
+    cursor.execute("""
+    SELECT
+        room_code,
+        sex,
+        age_group,
+        temp,
+        recommended_temp,
+        feedback,
+        timestamp
+    FROM feedback_logs
+    ORDER BY id DESC
+    LIMIT 20
+    """)
+
+    recent_logs = cursor.fetchall()
+
+    conn.close()
+
+    return render_template_string("""
+    <html>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="10">
+
+    <title>관리자 페이지</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+
+    body{
+        background:#101114;
+        color:white;
+        font-family:Arial;
+        padding:40px;
+    }
+
+    .card{
+        background:#1a1f2b;
+        padding:20px;
+        border-radius:12px;
+        margin-bottom:20px;
+    }
+
+    table{
+        width:100%;
+        border-collapse:collapse;
+    }
+
+    th, td{
+        border-bottom:1px solid #333;
+        padding:12px;
+        text-align:center;
+        font-size:14px;
+    }
+
+    th{
+        color:#66ffd1;
+    }
+
+    h1{
+        color:#66ffd1;
+    }
+
+    </style>
+    </head>
+
+    <body>
+
+    <h1>관리자 통계 페이지</h1>
+
+    <div class="card">
+        <h2>전체 피드백 수</h2>
+        <h1>{{ total_count }}</h1>
+    </div>
+
+    <div class="card">
+        <h2>피드백 분포</h2>
+
+        {% for stat in feedback_stats %}
+            <p>
+                {{ stat[0] }} : {{ stat[1] }}개
+                ({{ ((stat[1] / total_count) * 100) | round(1) }}%)
+            </p>
+        {% endfor %}
+
+        <canvas id="feedbackChart"
+                style="margin-top:20px;"></canvas>
+    </div>
+
+    <div class="card">
+        <h2>최근 피드백</h2>
+
+        <table>
+
+        <tr>
+            <th>방 코드</th>
+            <th>성별</th>
+            <th>연령</th>
+            <th>희망 온도</th>
+            <th>추천 온도</th>
+            <th>피드백</th>
+            <th>시간</th>
+        </tr>
+
+        {% for row in recent_logs %}
+
+        <tr>
+            <td>{{ row[0] }}</td>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+            <td>{{ row[4] }}</td>
+            <td>{{ row[5] }}</td>
+            <td>{{ row[6] }}</td>
+        </tr>
+
+        {% endfor %}
+
+        </table>
+
+        <script>
+
+        const feedbackLabels = [
+            {% for stat in feedback_stats %}
+                "{{ stat[0] }}",
+            {% endfor %}
+        ];
+
+        const feedbackCounts = [
+            {% for stat in feedback_stats %}
+                {{ stat[1] }},
+            {% endfor %}
+        ];
+
+        const ctx = document.getElementById("feedbackChart");
+
+        new Chart(ctx, {
+            type: "bar",
+
+            data: {
+                labels: feedbackLabels,
+
+                datasets: [{
+                    label: "피드백 수",
+
+                    data: feedbackCounts,
+
+                    backgroundColor: [
+                        "#66ffd1",
+                        "#4da3ff",
+                        "#ff6b6b"
+                    ],
+
+                    borderRadius: 8
+                }]
+            },
+
+            options: {
+
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "white"
+                        }
+                    }
+                },
+
+                scales: {
+
+                    x: {
+                        ticks: {
+                            color: "white"
+                        },
+
+                        grid: {
+                            color: "#333"
+                        }
+                    },
+
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: 5,
+
+                        ticks: {
+                            color: "white"
+                        },
+
+                        grid: {
+                            color: "#333"
+                        }
+                    }
+                }
+            }
+        });
+
+        </script>
+
+    </div>
+
+    </body>
+    </html>
+    """,
+    total_count=total_count,
+    feedback_stats=feedback_stats,
+    recent_logs=recent_logs)
 
 @app.route("/")
 def home():
