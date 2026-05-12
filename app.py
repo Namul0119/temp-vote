@@ -7,7 +7,15 @@ import base64
 from io import BytesIO
 from flask import Flask, render_template_string, request, redirect, url_for, session
 from model import predict_with_ai, encoders
-from rooms import create_room, add_vote, is_room_complete, get_room_votes, get_room_status
+from rooms import (
+    rooms,
+    create_room,
+    add_vote,
+    is_room_complete,
+    get_room_votes,
+    get_room_status,
+    delete_room
+)
 import random
 import string
 import subprocess
@@ -768,6 +776,15 @@ HTML = """
                 <button onclick="copyResult()" style="margin-top:14px;">
                     결과 복사
                 </button>
+
+                <form method="post"
+                    action="{{ url_for('close_room', code=code) }}"
+                    style="margin-top:14px;"
+                    onsubmit="return confirm('정말 방을 종료하시겠습니까?');">
+                                    <button type="submit" style="background:#444;">
+                        방 종료하기
+                    </button>
+                </form>
             </div>
             {% endif %}
         </div>
@@ -932,6 +949,47 @@ def host(code):
 
 @app.route("/room/<code>", methods=["GET", "POST"])
 def room(code):
+
+    if code not in rooms:
+        return render_template_string("""
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+
+        <body style="
+        background:#101114;
+        color:white;
+        text-align:center;
+        padding-top:120px;
+        font-family:sans-serif;
+        ">
+
+        <h1>존재하지 않는 방입니다</h1>
+
+        <p style="color:#aaa;">
+        방 코드가 잘못되었거나 이미 종료된 방입니다.
+        </p>
+
+        <a href="/">
+            <button style="
+            margin-top:20px;
+            padding:14px 28px;
+            border:none;
+            border-radius:8px;
+            background:#2f6df6;
+            color:white;
+            font-size:16px;
+            cursor:pointer;
+            ">
+                새 방 만들기
+            </button>
+        </a>
+
+        </body>
+        </html>
+        """)
 
     joined_key = f"joined_{code}"
 
@@ -1178,6 +1236,48 @@ def room(code):
 
 @app.route("/result/<code>")
 def result(code):
+
+    if code not in rooms:
+        return render_template_string("""
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+
+        <body style="
+        background:#101114;
+        color:white;
+        text-align:center;
+        padding-top:120px;
+        font-family:sans-serif;
+        ">
+
+        <h1>존재하지 않는 방입니다</h1>
+
+        <p style="color:#aaa;">
+        방 코드가 잘못되었거나 이미 종료된 방입니다.
+        </p>
+
+        <a href="/">
+            <button style="
+            margin-top:20px;
+            padding:14px 28px;
+            border:none;
+            border-radius:8px;
+            background:#2f6df6;
+            color:white;
+            font-size:16px;
+            cursor:pointer;
+            ">
+                새 방 만들기
+            </button>
+        </a>
+
+        </body>
+        </html>
+        """)
+
     current, target = get_room_status(code)
 
     if current < target:
@@ -1521,6 +1621,52 @@ def feedback(code):
     </body>
     </html>
     """, next_temp=best_temp)
+
+@app.route("/close/<code>", methods=["POST"])
+def close_room(code):
+    delete_room(code)
+    session.pop(f"joined_{code}", None)
+    
+    return render_template_string("""
+    <html>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>방 종료</title>
+    </head>
+
+    <body style="
+    background:#101114;
+    color:white;
+    text-align:center;
+    padding-top:120px;
+    font-family:Arial;
+    ">
+
+    <h1>방이 종료되었습니다</h1>
+
+    <p style="color:#aaa;">
+    해당 방의 참여 정보가 초기화되었습니다.
+    </p>
+
+    <a href="/">
+        <button style="
+        margin-top:20px;
+        padding:14px 28px;
+        border:none;
+        border-radius:8px;
+        background:#2f6df6;
+        color:white;
+        font-size:16px;
+        cursor:pointer;
+        ">
+            새 방 만들기
+        </button>
+    </a>
+
+    </body>
+    </html>
+    """)
 
 @app.route("/")
 def home():

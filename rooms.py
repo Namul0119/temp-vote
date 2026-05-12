@@ -18,3 +18,7 @@ def get_room_votes(room_code):
 def get_room_status(room_code):
     room = rooms[room_code]
     return len(room["votes"]), room["target_count"]
+
+def delete_room(room_code):
+    if room_code in rooms:
+        del rooms[room_code]
