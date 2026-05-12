@@ -1733,6 +1733,14 @@ def admin():
     feedback_stats = cursor.fetchall()
 
     cursor.execute("""
+    SELECT recommended_temp, COUNT(*)
+    FROM feedback_logs
+    GROUP BY recommended_temp
+    ORDER BY recommended_temp
+    """)
+    temp_stats = cursor.fetchall()
+
+    cursor.execute("""
     SELECT
         room_code,
         sex,
@@ -1821,6 +1829,16 @@ def admin():
 
         <canvas id="feedbackChart"
                 style="margin-top:20px;"></canvas>
+    </div>
+
+    <div class="card">
+        <h2>추천 온도 분포</h2>
+
+        {% for stat in temp_stats %}
+            <p>{{ stat[0] }}°C : {{ stat[1] }}개</p>
+        {% endfor %}
+
+        <canvas id="tempChart" style="margin-top:20px;"></canvas>
     </div>
 
     <div class="card">
@@ -1929,6 +1947,68 @@ def admin():
             }
         });
 
+        const tempLabels = [
+            {% for stat in temp_stats %}
+                "{{ stat[0] }}°C",
+            {% endfor %}
+        ];
+
+        const tempCounts = [
+            {% for stat in temp_stats %}
+                {{ stat[1] }},
+            {% endfor %}
+        ];
+
+        const tempCtx = document.getElementById("tempChart");
+
+        new Chart(tempCtx, {
+            type: "bar",
+
+            data: {
+                labels: tempLabels,
+
+                datasets: [{
+                    label: "추천 온도 수",
+                    data: tempCounts,
+                    backgroundColor: "#66ffd1",
+                    borderRadius: 8
+                }]
+            },
+
+            options: {
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "white"
+                        }
+                    }
+                },
+
+                scales: {
+                    x: {
+                        ticks: {
+                            color: "white"
+                        },
+                        grid: {
+                            color: "#333"
+                        }
+                    },
+
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: 5,
+
+                        ticks: {
+                            color: "white"
+                        },
+                        grid: {
+                            color: "#333"
+                        }
+                    }
+                }
+            }
+        });
+
         </script>
 
     </div>
@@ -1938,6 +2018,7 @@ def admin():
     """,
     total_count=total_count,
     feedback_stats=feedback_stats,
+    temp_stats=temp_stats,
     recent_logs=recent_logs)
 
 @app.route("/")
