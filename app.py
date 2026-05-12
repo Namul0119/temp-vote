@@ -862,25 +862,6 @@ HTML = """
 </html>
 """
 
-CREATE_HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>방 만들기</title>
-</head>
-<body style="background:#101114; color:white; font-family:Arial; text-align:center; padding-top:100px;">
-    <h1>집단 온도 추천 AI</h1>
-    <p>몇 명이 투표할지 정해주세요.</p>
-
-    <form method="post">
-        <input type="number" name="target_count" min="2" max="30" value="5" required>
-        <button type="submit">방 만들기</button>
-    </form>
-</body>
-</html>
-"""
-
 @app.route("/create", methods=["GET", "POST"])
 def create():
     if request.method == "POST":
@@ -891,7 +872,7 @@ def create():
 
         return redirect(url_for("host", code=room_code))
 
-    return render_template_string(CREATE_HTML)
+    return render_template("create.html")
 
 @app.route("/host/<code>")
 def host(code):
@@ -903,56 +884,14 @@ def host(code):
     room_url = f"http://192.168.219.111:5000/room/{code}"
     qr_image = generate_qr_code(room_url)
 
-    return render_template_string("""
-    <html>
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="3">
-    <title>방장 대기 화면</title>
-    </head>
-    <body style="background:#101114; color:white; font-family:Arial; text-align:center; padding-top:100px;">
-        <h1>방이 생성되었습니다</h1>
-
-        <p style="font-size:24px;">{{ current }}/{{ target }}명 참여 완료</p>
-
-        <p style="color:#aaa;">아래 링크를 참여자들에게 공유하세요.</p>
-
-        <input id="roomLink" value="{{ room_url }}"
-        style="width:min(330px, 90vw); padding:12px; text-align:center; border-radius:6px; border:none;">
-
-        <br><br>
-
-        <p style="color:#aaa;">QR로 참여하기</p>
-
-        <img src="data:image/png;base64,{{ qr_image }}" 
-             style="width:200px; border-radius:10px; background:white; padding:10px;">
-
-        <br><br>
-
-        <button onclick="copyLink()" style="padding:12px 24px; border:none; border-radius:6px; background:#62ffd5;">
-            링크 복사
-        </button>
-
-        <br><br>
-
-        <a href="{{ url_for('result', code=code) }}">
-            <button style="padding:14px 28px; font-size:18px; background:#2f6df6; color:white; border:none; border-radius:6px;">
-                결과 확인하기
-            </button>
-        </a>
-
-        <script>
-        function copyLink() {
-            const link = document.getElementById("roomLink");
-            link.select();
-            document.execCommand("copy");
-            alert("링크가 복사되었습니다!");
-        }
-        </script>
-    </body>
-    </html>
-    """, code=code, current=current, target=target, qr_image=qr_image, room_url=room_url)
+    return render_template(
+        "host.html",
+        code=code,
+        current=current,
+        target=target,
+        qr_image=qr_image,
+        room_url=room_url
+    )
 
 @app.route("/room/<code>", methods=["GET", "POST"])
 def room(code):
@@ -1681,17 +1620,16 @@ def admin():
     key = request.args.get("key")
 
     if key != ADMIN_KEY:
-        return render_template(
-        "admin.html",
-        total_count=total_count,
-        feedback_stats=feedback_stats,
-        temp_stats=temp_stats,
-        hour_stats=hour_stats,
-        recent_logs=recent_logs,
-        ai_data_count=ai_data_count,
-        remain_for_train=remain_for_train,
-        model_accuracy=model_accuracy
-    )
+        return render_template_string("""
+        <html>
+        <head><meta charset="UTF-8"></head>
+        <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
+            <h1>관리자 권한이 없습니다</h1>
+            <p style="color:#aaa;">올바른 관리자 키가 필요합니다.</p>
+            <a href="/"><button>메인으로 돌아가기</button></a>
+        </body>
+        </html>
+        """)
 
     conn = sqlite3.connect("temperature_feedback.db")
     cursor = conn.cursor()
@@ -1761,409 +1699,17 @@ def admin():
 
     conn.close()
 
-    return render_template_string("""
-    <html>
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="10">
-
-    <title>관리자 페이지</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-
-    body{
-        background:#101114;
-        color:white;
-        font-family:Arial;
-        padding:40px;
-    }
-
-    .card{
-        background:#1a1f2b;
-        padding:20px;
-        border-radius:12px;
-        margin-bottom:20px;
-    }
-
-    table{
-        width:100%;
-        border-collapse:collapse;
-    }
-
-    th, td{
-        border-bottom:1px solid #333;
-        padding:12px;
-        text-align:center;
-        font-size:14px;
-    }
-
-    th{
-        color:#66ffd1;
-    }
-
-    h1{
-        color:#66ffd1;
-    }
-
-    </style>
-    </head>
-
-    <body>
-
-    <h1>관리자 통계 페이지</h1>
-
-    <div class="card">
-        <h2>AI 모델 성능</h2>
-
-        <p style="
-        font-size:30px;
-        color:#66ffd1;
-        font-weight:bold;
-        margin-top:20px;
-        ">
-            {{ model_accuracy }}%
-        </p>
-
-        <p style="
-        color:#aaa;
-        margin-top:10px;
-        ">
-            현재 AI 예측 정확도
-        </p>
-
-        <div style="
-        margin-top:16px;
-        color:#66ffd1;
-        font-size:14px;
-        ">
-            ✔ 최근 재학습 상태 정상
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>AI 학습 상태</h2>
-
-        <p style="font-size:22px; color:#66ffd1; font-weight:bold;">
-            현재 학습 데이터: {{ ai_data_count }}개
-        </p>
-
-        <p style="color:#aaa; margin-top:10px;">
-            다음 자동 재학습까지 {{ remain_for_train }}개 남음
-        </p>
-
-        <div style="
-            margin-top:18px;
-            width:100%;
-            height:18px;
-            background:#11151f;
-            border-radius:20px;
-            overflow:hidden;
-        ">
-            <div style="
-                width:{{ ((ai_data_count % 10) * 10) }}%;
-                height:100%;
-                background:linear-gradient(90deg, #00e5a8, #66ffd1);
-                transition:width 0.6s ease;
-            ">
-            </div>
-        </div>
-
-        <p style="margin-top:8px; color:#888; font-size:13px;">
-            데이터가 10개 누적될 때마다 자동 재학습됩니다
-        </p>
-    </div>
-
-    <div class="card">
-        <h2>전체 피드백 수</h2>
-        <h1>{{ total_count }}</h1>
-    </div>
-
-    <div class="card">
-        <h2>피드백 분포</h2>
-
-        {% for stat in feedback_stats %}
-            <p>
-                {{ stat[0] }} : {{ stat[1] }}개
-                ({{ ((stat[1] / total_count) * 100) | round(1) }}%)
-            </p>
-        {% endfor %}
-
-        <canvas id="feedbackChart"
-                style="margin-top:20px;"></canvas>
-    </div>
-
-    <div class="card">
-        <h2>추천 온도 분포</h2>
-
-        {% for stat in temp_stats %}
-            <p>{{ stat[0] }}°C : {{ stat[1] }}개</p>
-        {% endfor %}
-
-        <canvas id="tempChart" style="margin-top:20px;"></canvas>
-    </div>
-
-    <div class="card">
-        <h2>시간대별 피드백 수</h2>
-
-        {% for stat in hour_stats %}
-            <p>{{ stat[0] }}시 : {{ stat[1] }}개</p>
-        {% endfor %}
-
-        <canvas id="hourChart" style="margin-top:20px;"></canvas>
-    </div>
-
-    <div class="card">
-        <h2>최근 피드백</h2>
-
-        <table>
-
-        <tr>
-            <th>방 코드</th>
-            <th>성별</th>
-            <th>연령</th>
-            <th>희망 온도</th>
-            <th>추천 온도</th>
-            <th>피드백</th>
-            <th>시간</th>
-        </tr>
-
-        {% for row in recent_logs %}
-
-        <tr>
-            <td>{{ row[0] }}</td>
-            <td>{{ row[1] }}</td>
-            <td>{{ row[2] }}</td>
-            <td>{{ row[3] }}</td>
-            <td>{{ row[4] }}</td>
-            <td>{{ row[5] }}</td>
-            <td>{{ row[6] }}</td>
-        </tr>
-
-        {% endfor %}
-
-        </table>
-
-        <script>
-
-        const feedbackLabels = [
-            {% for stat in feedback_stats %}
-                "{{ stat[0] }}",
-            {% endfor %}
-        ];
-
-        const feedbackCounts = [
-            {% for stat in feedback_stats %}
-                {{ stat[1] }},
-            {% endfor %}
-        ];
-
-        const ctx = document.getElementById("feedbackChart");
-
-        new Chart(ctx, {
-            type: "bar",
-
-            data: {
-                labels: feedbackLabels,
-
-                datasets: [{
-                    label: "피드백 수",
-
-                    data: feedbackCounts,
-
-                    backgroundColor: [
-                        "#66ffd1",
-                        "#4da3ff",
-                        "#ff6b6b"
-                    ],
-
-                    borderRadius: 8
-                }]
-            },
-
-            options: {
-
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: "white"
-                        }
-                    }
-                },
-
-                scales: {
-
-                    x: {
-                        ticks: {
-                            color: "white"
-                        },
-
-                        grid: {
-                            color: "#333"
-                        }
-                    },
-
-                    y: {
-                        beginAtZero: true,
-                        suggestedMax: 5,
-
-                        ticks: {
-                            color: "white"
-                        },
-
-                        grid: {
-                            color: "#333"
-                        }
-                    }
-                }
-            }
-        });
-
-        const tempLabels = [
-            {% for stat in temp_stats %}
-                "{{ stat[0] }}°C",
-            {% endfor %}
-        ];
-
-        const tempCounts = [
-            {% for stat in temp_stats %}
-                {{ stat[1] }},
-            {% endfor %}
-        ];
-
-        const tempCtx = document.getElementById("tempChart");
-
-        new Chart(tempCtx, {
-            type: "bar",
-
-            data: {
-                labels: tempLabels,
-
-                datasets: [{
-                    label: "추천 온도 수",
-                    data: tempCounts,
-                    backgroundColor: "#66ffd1",
-                    borderRadius: 8
-                }]
-            },
-
-            options: {
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: "white"
-                        }
-                    }
-                },
-
-                scales: {
-                    x: {
-                        ticks: {
-                            color: "white"
-                        },
-                        grid: {
-                            color: "#333"
-                        }
-                    },
-
-                    y: {
-                        beginAtZero: true,
-                        suggestedMax: 5,
-
-                        ticks: {
-                            color: "white"
-                        },
-                        grid: {
-                            color: "#333"
-                        }
-                    }
-                }
-            }
-        });
-
-        const hourLabels = [
-            {% for stat in hour_stats %}
-                "{{ stat[0] }}시",
-            {% endfor %}
-        ];
-
-        const hourCounts = [
-            {% for stat in hour_stats %}
-                {{ stat[1] }},
-            {% endfor %}
-        ];
-
-        const hourCtx = document.getElementById("hourChart");
-
-        new Chart(hourCtx, {
-            type: "line",
-
-            data: {
-                labels: hourLabels,
-
-                datasets: [{
-                    label: "시간대별 피드백 수",
-                    data: hourCounts,
-                    borderColor: "#66ffd1",
-                    backgroundColor: "rgba(102, 255, 209, 0.15)",
-                    tension: 0.35,
-                    fill: true,
-                    pointRadius: 5,
-                    pointBackgroundColor: "#66ffd1"
-                }]
-            },
-
-            options: {
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: "white"
-                        }
-                    }
-                },
-
-                scales: {
-                    x: {
-                        ticks: {
-                            color: "white"
-                        },
-                        grid: {
-                            color: "#333"
-                        }
-                    },
-
-                    y: {
-                        beginAtZero: true,
-                        suggestedMax: 5,
-
-                        ticks: {
-                            color: "white"
-                        },
-                        grid: {
-                            color: "#333"
-                        }
-                    }
-                }
-            }
-        });
-
-        </script>
-
-    </div>
-
-    </body>
-    </html>
-    """,
-    total_count=total_count,
-    feedback_stats=feedback_stats,
-    temp_stats=temp_stats,
-    hour_stats=hour_stats,
-    recent_logs=recent_logs,
-    ai_data_count=ai_data_count,
-    remain_for_train=remain_for_train,
-    model_accuracy=model_accuracy)
+    return render_template(
+        "admin.html",
+        total_count=total_count,
+        feedback_stats=feedback_stats,
+        temp_stats=temp_stats,
+        hour_stats=hour_stats,
+        recent_logs=recent_logs,
+        ai_data_count=ai_data_count,
+        remain_for_train=remain_for_train,
+        model_accuracy=model_accuracy
+    )
 
 @app.route("/")
 def home():

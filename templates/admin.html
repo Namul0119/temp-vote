@@ -2,34 +2,356 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>접근 제한</title>
+<meta http-equiv="refresh" content="10">
+
+<title>관리자 페이지</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/admin.css') }}">
 </head>
 
-<body style="
-background:#101114;
-color:white;
-text-align:center;
-padding-top:120px;
-font-family:Arial;
-">
+<body>
 
-<h1>관리자 권한이 없습니다</h1>
-<p style="color:#aaa;">올바른 관리자 키가 필요합니다.</p>
+<h1>관리자 통계 페이지</h1>
 
-<a href="/">
-    <button style="
+<div class="card">
+    <h2>AI 모델 성능</h2>
+
+    <p style="
+    font-size:30px;
+    color:#66ffd1;
+    font-weight:bold;
     margin-top:20px;
-    padding:14px 28px;
-    border:none;
-    border-radius:8px;
-    background:#2f6df6;
-    color:white;
-    font-size:16px;
-    cursor:pointer;
     ">
-        메인으로 돌아가기
-    </button>
-</a>
+        {{ model_accuracy }}%
+    </p>
+
+    <p style="
+    color:#aaa;
+    margin-top:10px;
+    ">
+        현재 AI 예측 정확도
+    </p>
+
+    <div style="
+    margin-top:16px;
+    color:#66ffd1;
+    font-size:14px;
+    ">
+        ✔ 최근 재학습 상태 정상
+    </div>
+</div>
+
+<div class="card">
+    <h2>AI 학습 상태</h2>
+
+    <p style="font-size:22px; color:#66ffd1; font-weight:bold;">
+        현재 학습 데이터: {{ ai_data_count }}개
+    </p>
+
+    <p style="color:#aaa; margin-top:10px;">
+        다음 자동 재학습까지 {{ remain_for_train }}개 남음
+    </p>
+
+    <div style="
+        margin-top:18px;
+        width:100%;
+        height:18px;
+        background:#11151f;
+        border-radius:20px;
+        overflow:hidden;
+    ">
+        <div style="
+            width:{{ ((ai_data_count % 10) * 10) }}%;
+            height:100%;
+            background:linear-gradient(90deg, #00e5a8, #66ffd1);
+            transition:width 0.6s ease;
+        ">
+        </div>
+    </div>
+
+    <p style="margin-top:8px; color:#888; font-size:13px;">
+        데이터가 10개 누적될 때마다 자동 재학습됩니다
+    </p>
+</div>
+
+<div class="card">
+    <h2>전체 피드백 수</h2>
+    <h1>{{ total_count }}</h1>
+</div>
+
+<div class="card">
+    <h2>피드백 분포</h2>
+
+    {% for stat in feedback_stats %}
+        <p>
+            {{ stat[0] }} : {{ stat[1] }}개
+            ({{ ((stat[1] / total_count) * 100) | round(1) }}%)
+        </p>
+    {% endfor %}
+
+    <canvas id="feedbackChart"
+            style="margin-top:20px;"></canvas>
+</div>
+
+<div class="card">
+    <h2>추천 온도 분포</h2>
+
+    {% for stat in temp_stats %}
+        <p>{{ stat[0] }}°C : {{ stat[1] }}개</p>
+    {% endfor %}
+
+    <canvas id="tempChart" style="margin-top:20px;"></canvas>
+</div>
+
+<div class="card">
+    <h2>시간대별 피드백 수</h2>
+
+    {% for stat in hour_stats %}
+        <p>{{ stat[0] }}시 : {{ stat[1] }}개</p>
+    {% endfor %}
+
+    <canvas id="hourChart" style="margin-top:20px;"></canvas>
+</div>
+
+<div class="card">
+    <h2>최근 피드백</h2>
+
+    <table>
+
+    <tr>
+        <th>방 코드</th>
+        <th>성별</th>
+        <th>연령</th>
+        <th>희망 온도</th>
+        <th>추천 온도</th>
+        <th>피드백</th>
+        <th>시간</th>
+    </tr>
+
+    {% for row in recent_logs %}
+
+    <tr>
+        <td>{{ row[0] }}</td>
+        <td>{{ row[1] }}</td>
+        <td>{{ row[2] }}</td>
+        <td>{{ row[3] }}</td>
+        <td>{{ row[4] }}</td>
+        <td>{{ row[5] }}</td>
+        <td>{{ row[6] }}</td>
+    </tr>
+
+    {% endfor %}
+
+    </table>
+
+    <script>
+
+    const feedbackLabels = [
+        {% for stat in feedback_stats %}
+            "{{ stat[0] }}",
+        {% endfor %}
+    ];
+
+    const feedbackCounts = [
+        {% for stat in feedback_stats %}
+            {{ stat[1] }},
+        {% endfor %}
+    ];
+
+    const ctx = document.getElementById("feedbackChart");
+
+    new Chart(ctx, {
+        type: "bar",
+
+        data: {
+            labels: feedbackLabels,
+
+            datasets: [{
+                label: "피드백 수",
+
+                data: feedbackCounts,
+
+                backgroundColor: [
+                    "#66ffd1",
+                    "#4da3ff",
+                    "#ff6b6b"
+                ],
+
+                borderRadius: 8
+            }]
+        },
+
+        options: {
+
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "white"
+                    }
+                }
+            },
+
+            scales: {
+
+                x: {
+                    ticks: {
+                        color: "white"
+                    },
+
+                    grid: {
+                        color: "#333"
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: 5,
+
+                    ticks: {
+                        color: "white"
+                    },
+
+                    grid: {
+                        color: "#333"
+                    }
+                }
+            }
+        }
+    });
+
+    const tempLabels = [
+        {% for stat in temp_stats %}
+            "{{ stat[0] }}°C",
+        {% endfor %}
+    ];
+
+    const tempCounts = [
+        {% for stat in temp_stats %}
+            {{ stat[1] }},
+        {% endfor %}
+    ];
+
+    const tempCtx = document.getElementById("tempChart");
+
+    new Chart(tempCtx, {
+        type: "bar",
+
+        data: {
+            labels: tempLabels,
+
+            datasets: [{
+                label: "추천 온도 수",
+                data: tempCounts,
+                backgroundColor: "#66ffd1",
+                borderRadius: 8
+            }]
+        },
+
+        options: {
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "white"
+                    }
+                }
+            },
+
+            scales: {
+                x: {
+                    ticks: {
+                        color: "white"
+                    },
+                    grid: {
+                        color: "#333"
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: 5,
+
+                    ticks: {
+                        color: "white"
+                    },
+                    grid: {
+                        color: "#333"
+                    }
+                }
+            }
+        }
+    });
+
+    const hourLabels = [
+        {% for stat in hour_stats %}
+            "{{ stat[0] }}시",
+        {% endfor %}
+    ];
+
+    const hourCounts = [
+        {% for stat in hour_stats %}
+            {{ stat[1] }},
+        {% endfor %}
+    ];
+
+    const hourCtx = document.getElementById("hourChart");
+
+    new Chart(hourCtx, {
+        type: "line",
+
+        data: {
+            labels: hourLabels,
+
+            datasets: [{
+                label: "시간대별 피드백 수",
+                data: hourCounts,
+                borderColor: "#66ffd1",
+                backgroundColor: "rgba(102, 255, 209, 0.15)",
+                tension: 0.35,
+                fill: true,
+                pointRadius: 5,
+                pointBackgroundColor: "#66ffd1"
+            }]
+        },
+
+        options: {
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "white"
+                    }
+                }
+            },
+
+            scales: {
+                x: {
+                    ticks: {
+                        color: "white"
+                    },
+                    grid: {
+                        color: "#333"
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: 5,
+
+                    ticks: {
+                        color: "white"
+                    },
+                    grid: {
+                        color: "#333"
+                    }
+                }
+            }
+        }
+    });
+
+    </script>
+
+</div>
 
 </body>
 </html>
