@@ -5,70 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>입력 화면</title>
 
-<style>
-body {
-    background:#101114;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-    padding-top:60px;
-}
-
-.container {
-    width: min(420px, 92vw);
-    margin:0 auto;
-}
-
-h1 {
-    margin-bottom:10px;
-}
-
-.subtitle {
-    color:#aaa;
-    margin-bottom:25px;
-}
-
-select, input {
-    width:100%;
-    padding:12px;
-    margin-bottom:15px;
-    background:#292b31;
-    border:none;
-    color:white;
-    border-radius:6px;
-}
-
-button {
-    width:100%;
-    padding:14px;
-    background:#2f6df6;
-    border:none;
-    color:white;
-    font-size:16px;
-    border-radius:6px;
-    cursor:pointer;
-}
-
-button {
-    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-}
-
-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(47, 109, 246, 0.35);
-    background: #3f7cff;
-}
-
-button:active {
-    transform: translateY(0);
-}
-
-.status {
-    margin-bottom:20px;
-    font-size:18px;
-    color:#62ffd5;
-}
-</style>
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/room.css') }}">
 </head>
 
 <body>
