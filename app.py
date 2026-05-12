@@ -121,10 +121,6 @@ HTML = """
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-{% if result %}
-<meta http-equiv="refresh" content="5">
-{% endif %}
-
 <title>집단 온도 추천 AI</title>
 
 <style>
@@ -537,6 +533,32 @@ HTML = """
     <div class="big-temp" id="tempCounter">0°C</div>
     <div class="satisfaction">예상 만족도 {{ satisfaction }}%</div>
 
+    <div style="
+        width:320px;
+        height:18px;
+        background:#1f2430;
+        border-radius:20px;
+        margin:16px auto 0;
+        overflow:hidden;
+    ">
+        <div style="
+            width:{{ satisfaction }}%;
+            height:100%;
+            background:linear-gradient(90deg, #00e5a8, #62ffd5);
+            box-shadow:0 0 14px rgba(98,255,213,0.5);
+            transition:width 1s ease;
+        ">
+        </div>
+    </div>
+
+    <div style="
+        margin-top:8px;
+        color:#aaa;
+        font-size:14px;
+    ">
+        AI 확신도 {{ satisfaction }}%
+    </div>
+
     <div style="color:#888; font-size:14px; margin-top:6px;">
         (AI 예측 기반)
     </div>
@@ -742,6 +764,10 @@ HTML = """
 
             <br><br>
                 <a href="/"><button>다시 예측하기</button></a>
+
+                <button onclick="copyResult()" style="margin-top:14px;">
+                    결과 복사
+                </button>
             </div>
             {% endif %}
         </div>
@@ -769,6 +795,42 @@ HTML = """
                 clearInterval(interval);
             }
         }, 40);
+    }
+
+    function copyResult() {
+        const text =
+    `우리 방 AI 추천 온도는 {{ result }}°C 입니다!
+    예상 만족도: {{ satisfaction }}%
+    AI 집단 온도 추천 시스템`;
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("결과가 복사되었습니다!");
+            }).catch(() => {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    }
+
+    function fallbackCopy(text) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        try {
+            document.execCommand("copy");
+            alert("결과가 복사되었습니다!");
+        } catch (err) {
+            alert("복사에 실패했습니다. 직접 선택해서 복사해주세요.");
+        }
+
+        document.body.removeChild(textarea);
     }
     </script>
 
