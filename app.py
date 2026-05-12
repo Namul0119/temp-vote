@@ -1,3 +1,4 @@
+from data_storage import init_db, save_feedback_to_db
 from datetime import datetime
 import pandas as pd
 import csv
@@ -23,6 +24,8 @@ import threading
 
 app = Flask(__name__)
 app.secret_key = "temp-vote-secret-key"
+
+init_db()
 
 def get_clothes_weight(clothes):
     if clothes == "thin":
@@ -121,6 +124,7 @@ def save_real_feedback(code, person_index, feedback):
             datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ])
 
+        save_feedback_to_db(code, person_index, user, best_temp, feedback)
 
 HTML = """
 <!DOCTYPE html>
