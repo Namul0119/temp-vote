@@ -7,7 +7,7 @@ import os
 import qrcode
 import base64
 from io import BytesIO
-from flask import Flask, render_template_string, request, redirect, url_for, session
+from flask import Flask, render_template, render_template_string, request, redirect, url_for, session
 from model import predict_with_ai, encoders
 from rooms import (
     rooms,
@@ -22,7 +22,7 @@ import random
 import string
 import subprocess
 import threading
-
+ 
 app = Flask(__name__)
 app.secret_key = "temp-vote-secret-key"
 
@@ -1681,43 +1681,17 @@ def admin():
     key = request.args.get("key")
 
     if key != ADMIN_KEY:
-        return render_template_string("""
-        <html>
-        <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>접근 제한</title>
-        </head>
-
-        <body style="
-        background:#101114;
-        color:white;
-        text-align:center;
-        padding-top:120px;
-        font-family:Arial;
-        ">
-
-        <h1>관리자 권한이 없습니다</h1>
-        <p style="color:#aaa;">올바른 관리자 키가 필요합니다.</p>
-
-        <a href="/">
-            <button style="
-            margin-top:20px;
-            padding:14px 28px;
-            border:none;
-            border-radius:8px;
-            background:#2f6df6;
-            color:white;
-            font-size:16px;
-            cursor:pointer;
-            ">
-                메인으로 돌아가기
-            </button>
-        </a>
-
-        </body>
-        </html>
-        """)
+        return render_template(
+        "admin.html",
+        total_count=total_count,
+        feedback_stats=feedback_stats,
+        temp_stats=temp_stats,
+        hour_stats=hour_stats,
+        recent_logs=recent_logs,
+        ai_data_count=ai_data_count,
+        remain_for_train=remain_for_train,
+        model_accuracy=model_accuracy
+    )
 
     conn = sqlite3.connect("temperature_feedback.db")
     cursor = conn.cursor()
