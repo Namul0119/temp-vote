@@ -940,6 +940,26 @@ def room(code):
 
     if request.method == "POST":
         name = request.form["name"].strip()
+        existing_names = [
+            user.get("name", "").strip()
+            for user in get_room_votes(code)
+        ]
+
+        if name in existing_names:
+            return render_template_string("""
+            <html>
+            <head><meta charset="UTF-8"></head>
+            <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
+                <h1>이미 사용 중인 이름입니다</h1>
+                <p style="color:#aaa;">같은 방에서는 같은 이름으로 중복 참여할 수 없습니다.</p>
+                <a href="{{ url_for('room', code=code) }}">
+                    <button style="padding:14px 28px; background:#2f6df6; color:white; border:none; border-radius:6px;">
+                        다시 입력하기
+                    </button>
+                </a>
+            </body>
+            </html>
+            """, code=code)
         temp = int(request.form["temp"])
         clothes = request.form["clothes"]
         feels = request.form["feels"]
