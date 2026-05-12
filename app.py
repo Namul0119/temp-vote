@@ -236,6 +236,18 @@ HTML = """
     .result-box {
         text-align: center;
         margin-top: 70px;
+        animation: fadeUp 0.8s ease;
+    }
+
+    @keyframes fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .result-title {
@@ -248,6 +260,18 @@ HTML = """
         font-size: 86px;
         color: #62ffd5;
         font-weight: bold;
+        animation: popTemp 0.7s ease;
+    }
+
+    @keyframes popTemp {
+        from {
+            opacity: 0;
+            transform: scale(0.75);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
     }
 
     .satisfaction {
@@ -510,7 +534,7 @@ HTML = """
     <div class="result-box">
     <div class="result-title">온도 만족도 예측</div>
 
-    <div class="big-temp">{{ result }}°C</div>
+    <div class="big-temp" id="tempCounter">0°C</div>
     <div class="satisfaction">예상 만족도 {{ satisfaction }}%</div>
 
     <div style="color:#888; font-size:14px; margin-top:6px;">
@@ -722,13 +746,31 @@ HTML = """
             {% endif %}
         </div>
     {% endif %}
-<script>
-function showPerson(index) {
-    const blocks = document.querySelectorAll('.person-block');
-    blocks.forEach(block => block.classList.add('hidden'));
-    document.getElementById('person' + index).classList.remove('hidden');
-}
-</script>
+    <script>
+    function showPerson(index) {
+        const blocks = document.querySelectorAll('.person-block');
+        blocks.forEach(block => block.classList.add('hidden'));
+        document.getElementById('person' + index).classList.remove('hidden');
+    }
+
+    const targetTemp = {{ result }};
+    const tempElement = document.getElementById("tempCounter");
+
+    if (tempElement) {
+
+        let current = 0;
+
+        const interval = setInterval(() => {
+            current++;
+
+            tempElement.innerText = current + "°C";
+
+            if (current >= targetTemp) {
+                clearInterval(interval);
+            }
+        }, 40);
+    }
+    </script>
 
 </body>
 </html>
@@ -779,6 +821,7 @@ def host(code):
     <html>
     <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="refresh" content="3">
     <title>방장 대기 화면</title>
     </head>
@@ -790,7 +833,7 @@ def host(code):
         <p style="color:#aaa;">아래 링크를 참여자들에게 공유하세요.</p>
 
         <input id="roomLink" value="{{ room_url }}"
-        style="width:330px; padding:12px; text-align:center; border-radius:6px; border:none;">
+        style="width:min(330px, 90vw); padding:12px; text-align:center; border-radius:6px; border:none;">
 
         <br><br>
 
@@ -925,6 +968,20 @@ def room(code):
         font-size:16px;
         border-radius:6px;
         cursor:pointer;
+    }
+
+    button {
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(47, 109, 246, 0.35);
+        background: #3f7cff;
+    }
+
+    button:active {
+        transform: translateY(0);
     }
 
     .status {
