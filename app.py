@@ -119,6 +119,7 @@ HTML = """
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 {% if result %}
 <meta http-equiv="refresh" content="5">
@@ -135,7 +136,7 @@ HTML = """
     }
 
     .container {
-        width: 760px;
+        width: min(760px, 92vw);
         margin: 0 auto;
         padding: 60px 20px;
     }
@@ -879,6 +880,7 @@ def room(code):
     <html>
     <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>입력 화면</title>
 
     <style>
@@ -891,7 +893,7 @@ def room(code):
     }
 
     .container {
-        width:420px;
+        width: min(420px, 92vw);
         margin:0 auto;
     }
 
