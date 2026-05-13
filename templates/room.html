@@ -1,27 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>입력 화면</title>
+{% extends "base.html" %}
 
+{% block title %}
+입력 화면
+{% endblock %}
+
+{% block head %}
 <link rel="stylesheet"
       href="{{ url_for('static', filename='css/room.css') }}">
-</head>
+{% endblock %}
 
-<body>
+{% block content %}
 
 <div class="container">
 
     <h1>정보 입력</h1>
-    <div class="subtitle">현재 상태를 입력해주세요</div>
+
+    <div class="subtitle">
+        현재 상태를 입력해주세요
+    </div>
 
     <div class="status">
         {{ current }}/{{ target }}명 참여 완료
     </div>
 
     <form method="post">
-        <input type="text" name="name" placeholder="이름 또는 닉네임" required>
+
+        <input type="text"
+               name="name"
+               placeholder="이름 또는 닉네임"
+               required>
 
         <select name="sex">
             <option value="male">남성</option>
@@ -34,7 +41,12 @@
             <option value="senior">노년층</option>
         </select>
 
-        <input type="number" name="temp" min="18" max="30" placeholder="원하는 온도 (18~30)" required>
+        <input type="number"
+               name="temp"
+               min="18"
+               max="30"
+               placeholder="원하는 온도 (18~30)"
+               required>
 
         <select name="clothes">
             <option value="thin">얇음</option>
@@ -59,11 +71,12 @@
             <option value="ac">에어컨 근처</option>
         </select>
 
-        <button type="submit">입력 완료</button>
+        <button type="submit">
+            입력 완료
+        </button>
 
     </form>
 
 </div>
 
-</body>
-</html>
+{% endblock %}

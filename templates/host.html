@@ -1,48 +1,59 @@
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="3">
-<title>방장 대기 화면</title>
-</head>
-<body style="background:#101114; color:white; font-family:Arial; text-align:center; padding-top:100px;">
-    <h1>방이 생성되었습니다</h1>
+{% extends "base.html" %}
 
-    <p style="font-size:24px;">{{ current }}/{{ target }}명 참여 완료</p>
+{% block title %}
+방장 대기 화면
+{% endblock %}
 
-    <p style="color:#aaa;">아래 링크를 참여자들에게 공유하세요.</p>
+{% block head %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/host.css') }}">
+{% endblock %}
 
-    <input id="roomLink" value="{{ room_url }}"
-    style="width:min(330px, 90vw); padding:12px; text-align:center; border-radius:6px; border:none;">
+{% block content %}
 
-    <br><br>
+<h1>방이 생성되었습니다</h1>
 
-    <p style="color:#aaa;">QR로 참여하기</p>
+<p class="status">
+    {{ current }}/{{ target }}명 참여 완료
+</p>
 
-    <img src="data:image/png;base64,{{ qr_image }}" 
-            style="width:200px; border-radius:10px; background:white; padding:10px;">
+<p class="desc">
+    아래 링크를 참여자들에게 공유하세요.
+</p>
 
-    <br><br>
+<input id="roomLink"
+       value="{{ room_url }}">
 
-    <button onclick="copyLink()" style="padding:12px 24px; border:none; border-radius:6px; background:#62ffd5;">
-        링크 복사
+<br><br>
+
+<p class="desc">QR로 참여하기</p>
+
+<img class="qr-image"
+     src="data:image/png;base64,{{ qr_image }}">
+
+<br><br>
+
+<button class="copy-btn"
+        onclick="copyLink()">
+
+    링크 복사
+</button>
+
+<br><br>
+
+<a href="{{ url_for('result', code=code) }}">
+    <button class="result-btn">
+        결과 확인하기
     </button>
+</a>
 
-    <br><br>
+<script>
+function copyLink() {
+    const link = document.getElementById("roomLink");
+    link.select();
+    document.execCommand("copy");
+    alert("링크가 복사되었습니다!");
+}
+</script>
 
-    <a href="{{ url_for('result', code=code) }}">
-        <button style="padding:14px 28px; font-size:18px; background:#2f6df6; color:white; border:none; border-radius:6px;">
-            결과 확인하기
-        </button>
-    </a>
-
-    <script>
-    function copyLink() {
-        const link = document.getElementById("roomLink");
-        link.select();
-        document.execCommand("copy");
-        alert("링크가 복사되었습니다!");
-    }
-    </script>
-</body>
-</html>
+{% endblock %}

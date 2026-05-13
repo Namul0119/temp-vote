@@ -1,0 +1,47 @@
+body {
+    background:#101114;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+    padding-top:100px;
+}
+
+.status {
+    font-size:24px;
+}
+
+.desc {
+    color:#aaa;
+}
+
+#roomLink {
+    width:min(330px, 90vw);
+    
+    padding:12px;
+    text-align:center;
+    border-radius:6px;
+    border:none;
+}
+
+.qr-image {
+    width:200px;
+    border-radius:10px;
+    background:white;
+    padding:10px;
+}
+
+.copy-btn {
+    padding:12px 24px;
+    border:none;
+    border-radius:6px;
+    background:#62ffd5;
+}
+
+.result-btn {
+    padding:14px 28px;
+    font-size:18px;
+    background:#2f6df6;
+    color:white;
+    border:none;
+    border-radius:6px;
+}
