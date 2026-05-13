@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}
+오류
+{% endblock %}
+
+{% block content %}
+
+<div style="
+background:#101114;
+color:white;
+font-family:Arial;
+text-align:center;
+padding-top:120px;
+height:100vh;
+">
+
+    <h1>{{ title }}</h1>
+
+    <p style="
+    color:#aaa;
+    margin-top:14px;
+    font-size:17px;
+    ">
+        {{ message }}
+    </p>
+
+    <a href="/"
+       style="text-decoration:none;">
+
+        <button class="primary-btn"
+                style="margin-top:28px;">
+
+            메인으로 돌아가기
+
+        </button>
+
+    </a>
+
+</div>
+
+{% endblock %}

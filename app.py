@@ -9,6 +9,7 @@ import base64
 from io import BytesIO
 from flask import Flask, render_template, render_template_string, request, redirect, url_for, session
 from model import predict_with_ai, encoders
+from chart_utils import build_chart_data
 from rooms import (
     rooms,
     create_room,
@@ -164,45 +165,12 @@ def host(code):
 def room(code):
 
     if code not in rooms:
-        return render_template_string("""
-        <html>
-        <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
 
-        <body style="
-        background:#101114;
-        color:white;
-        text-align:center;
-        padding-top:120px;
-        font-family:sans-serif;
-        ">
-
-        <h1>존재하지 않는 방입니다</h1>
-
-        <p style="color:#aaa;">
-        방 코드가 잘못되었거나 이미 종료된 방입니다.
-        </p>
-
-        <a href="/">
-            <button style="
-            margin-top:20px;
-            padding:14px 28px;
-            border:none;
-            border-radius:8px;
-            background:#2f6df6;
-            color:white;
-            font-size:16px;
-            cursor:pointer;
-            ">
-                새 방 만들기
-            </button>
-        </a>
-
-        </body>
-        </html>
-        """)
+        return render_template(
+            "error.html",
+            title="존재하지 않는 방",
+            message="방 코드가 잘못되었거나 이미 종료된 방입니다."
+        )
 
     joined_key = f"joined_{code}"
 
@@ -213,45 +181,13 @@ def room(code):
         current, target = get_room_status(code)
 
         if current >= target:
-            return render_template_string("""
-            <html>
-            <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            </head>
 
-            <body style="
-            background:#101114;
-            color:white;
-            text-align:center;
-            padding-top:120px;
-            font-family:sans-serif;
-            ">
+            return render_template(
+                "error.html",
+                title="참여 마감",
+                message="이미 모든 참여자가 입력을 완료했습니다."
+            )
 
-            <h1>참여가 마감되었습니다</h1>
-
-            <p style="color:#aaa;">
-            이미 모든 참여자가 입력을 완료했습니다.
-            </p>
-
-            <a href="/result/{{ code }}">
-                <button style="
-                margin-top:20px;
-                padding:14px 28px;
-                border:none;
-                border-radius:8px;
-                background:#2f6df6;
-                color:white;
-                font-size:16px;
-                cursor:pointer;
-                ">
-                    결과 보기
-                </button>
-            </a>
-
-            </body>
-            </html>
-            """, code=code)
         name = request.form["name"].strip()
         existing_names = [
             user.get("name", "").strip()
@@ -259,20 +195,13 @@ def room(code):
         ]
 
         if name in existing_names:
-            return render_template_string("""
-            <html>
-            <head><meta charset="UTF-8"></head>
-            <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
-                <h1>이미 사용 중인 이름입니다</h1>
-                <p style="color:#aaa;">같은 방에서는 같은 이름으로 중복 참여할 수 없습니다.</p>
-                <a href="{{ url_for('room', code=code) }}">
-                    <button style="padding:14px 28px; background:#2f6df6; color:white; border:none; border-radius:6px;">
-                        다시 입력하기
-                    </button>
-                </a>
-            </body>
-            </html>
-            """, code=code)
+
+            return render_template(
+                "error.html",
+                title="이미 사용 중인 이름",
+                message="같은 방에서는 같은 이름으로 중복 참여할 수 없습니다."
+            )
+
         temp = int(request.form["temp"])
         clothes = request.form["clothes"]
         feels = request.form["feels"]
@@ -324,167 +253,22 @@ def room(code):
 def result(code):
 
     if code not in rooms:
-        return render_template_string("""
-        <html>
-        <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
 
-        <body style="
-        background:#101114;
-        color:white;
-        text-align:center;
-        padding-top:120px;
-        font-family:sans-serif;
-        ">
-
-        <h1>존재하지 않는 방입니다</h1>
-
-        <p style="color:#aaa;">
-        방 코드가 잘못되었거나 이미 종료된 방입니다.
-        </p>
-
-        <a href="/">
-            <button style="
-            margin-top:20px;
-            padding:14px 28px;
-            border:none;
-            border-radius:8px;
-            background:#2f6df6;
-            color:white;
-            font-size:16px;
-            cursor:pointer;
-            ">
-                새 방 만들기
-            </button>
-        </a>
-
-        </body>
-        </html>
-        """)
+        return render_template(
+            "error.html",
+            title="존재하지 않는 방",
+            message="방 코드가 잘못되었거나 이미 종료된 방입니다."
+        )
 
     current, target = get_room_status(code)
 
     if current < target:
-        return render_template_string("""
-        <html>
-        <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="refresh" content="2">
-        <title>결과 분석 중</title>
 
-        <style>
-            body {
-                margin: 0;
-                height: 100vh;
-                background:
-                    radial-gradient(circle at center, rgba(98,255,213,0.08), transparent 35%),
-                    #08090c;
-                color: white;
-                font-family: Arial, sans-serif;
-                overflow: hidden;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-            }
-
-            .formula {
-                position: absolute;
-                color: rgba(255,255,255,0.10);
-                font-size: 34px;
-                font-family: Georgia, serif;
-                filter: blur(0.3px);
-            }
-
-            .f1 { top: 8%; left: 8%; }
-            .f2 { top: 12%; right: 12%; }
-            .f3 { top: 36%; left: 6%; }
-            .f4 { bottom: 14%; right: 10%; }
-            .f5 { bottom: 10%; left: 14%; }
-
-            .loader {
-                width: 120px;
-                height: 120px;
-                border: 14px solid rgba(255,255,255,0.18);
-                border-top: 14px solid #62ffd5;
-                border-radius: 50%;
-                margin: 35px auto;
-                animation: spin 1.2s linear infinite;
-                box-shadow: 0 0 35px rgba(98,255,213,0.35);
-            }
-
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-
-            .title {
-                color: #62ffd5;
-                font-size: 20px;
-                font-weight: bold;
-                margin-bottom: 16px;
-            }
-
-            h1 {
-                font-size: 42px;
-                margin: 0;
-            }
-
-            .status {
-                font-size: 24px;
-                margin-top: 20px;
-                color: #62ffd5;
-                font-weight: bold;
-            }
-
-            .desc {
-                max-width: 760px;
-                margin: 30px auto 0;
-                color: #d6d6d6;
-                font-size: 18px;
-                line-height: 1.8;
-            }
-
-            .desc strong {
-                color: #62ffd5;
-            }
-
-            .small {
-                margin-top: 18px;
-                color: #aaa;
-                font-size: 15px;
-            }
-        </style>
-        </head>
-
-        <body>
-            <div class="formula f1">T = argmax Σ Sᵢ(T)</div>
-            <div class="formula f2">P(good | x)</div>
-            <div class="formula f3">Sᵢ = f(temp, clothes, activity)</div>
-            <div class="formula f4">ŷ = hθ(x)</div>
-            <div class="formula f5">x₁, x₂, ... , xₙ</div>
-
-            <div>
-                <div class="title">집단 온도 추천 AI</div>
-                <h1>참여 데이터를 기다리는 중입니다</h1>
-
-                <div class="loader"></div>
-
-                <div class="status">{{ current }}/{{ target }}명 참여 완료</div>
-
-                <div class="desc">
-                    사용자의 체감 온도, 선호 온도, 옷차림, 활동량, 위치 데이터를 수집하고 있습니다.<br>
-                    수집된 데이터를 기반으로 <strong>머신러닝 알고리즘</strong>이 집단이 가장 만족할 가능성이 높은 온도를 예측합니다.
-                </div>
-
-                <div class="small">
-                    모든 사람이 입력을 완료하면 자동으로 결과 화면으로 이동합니다.
-                </div>
-            </div>
-        </body>
-        </html>
-        """, current=current, target=target)
+        return render_template(
+            "loading.html",
+            current=current,
+            target=target
+        )
 
     votes = get_room_votes(code)
 
@@ -588,23 +372,7 @@ def result(code):
 
     best_chart_temp = temp_scores.index(max(temp_scores)) + 18
 
-    chart_dots = []
-    points = []
-
-    for idx, score in enumerate(temp_scores):
-        temp_value = 18 + idx
-        x = 50 + idx * (610 / 12)
-        y = 220 - (score / 100) * 180
-
-        chart_dots.append({
-            "temp": temp_value,
-            "x": round(x, 1),
-            "y": round(y, 1)
-        })
-
-        points.append(f"{round(x, 1)},{round(y, 1)}")
-
-    chart_points = " ".join(points)
+    chart_points, chart_dots = build_chart_data(temp_scores)
 
     next_temp = result
 
@@ -645,28 +413,20 @@ def feedback(code):
     person_index = session.get(f"person_index_{code}")
 
     if not person_index:
-        return render_template_string("""
-        <html>
-        <head><meta charset="UTF-8"></head>
-        <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
-            <h1>피드백을 저장할 수 없습니다</h1>
-            <p style="color:#aaa;">참여자 정보가 확인되지 않습니다.</p>
-            <a href="/"><button>새 방 만들기</button></a>
-        </body>
-        </html>
-        """)
+
+        return render_template(
+            "error.html",
+            title="피드백 저장 실패",
+            message="참여자 정보가 확인되지 않습니다."
+        )
 
     if is_feedback_already_saved(code, person_index):
-        return render_template_string("""
-        <html>
-        <head><meta charset="UTF-8"></head>
-        <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
-            <h1>이미 피드백이 저장되었습니다</h1>
-            <p style="color:#aaa;">같은 참여자는 한 번만 피드백을 남길 수 있습니다.</p>
-            <a href="/"><button>새 방 만들기</button></a>
-        </body>
-        </html>
-        """)
+
+        return render_template(
+            "error.html",
+            title="이미 저장된 피드백",
+            message="같은 참여자는 한 번만 피드백을 남길 수 있습니다."
+        )
 
     user_feedback = request.form["feedback"]
 
@@ -713,46 +473,7 @@ def close_room(code):
     delete_room(code)
     session.pop(f"joined_{code}", None)
     
-    return render_template_string("""
-    <html>
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>방 종료</title>
-    </head>
-
-    <body style="
-    background:#101114;
-    color:white;
-    text-align:center;
-    padding-top:120px;
-    font-family:Arial;
-    ">
-
-    <h1>방이 종료되었습니다</h1>
-
-    <p style="color:#aaa;">
-    해당 방의 참여 정보가 초기화되었습니다.
-    </p>
-
-    <a href="/">
-        <button style="
-        margin-top:20px;
-        padding:14px 28px;
-        border:none;
-        border-radius:8px;
-        background:#2f6df6;
-        color:white;
-        font-size:16px;
-        cursor:pointer;
-        ">
-            새 방 만들기
-        </button>
-    </a>
-
-    </body>
-    </html>
-    """)
+    return render_template("closed.html")
 
 @app.route("/admin")
 def admin():

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}
+방 종료
+{% endblock %}
+
+{% block content %}
+
+<div style="
+background:#101114;
+color:white;
+text-align:center;
+padding-top:120px;
+height:100vh;
+font-family:Arial;
+">
+
+    <h1>방이 종료되었습니다</h1>
+
+    <p style="color:#aaa;">
+        해당 방의 참여 정보가 초기화되었습니다.
+    </p>
+
+    <a href="/">
+        <button class="primary-btn"
+                style="margin-top:20px;">
+            새 방 만들기
+        </button>
+    </a>
+
+</div>
+
+{% endblock %}

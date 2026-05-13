@@ -380,9 +380,15 @@
         {% endif %}
 
             <br><br>
-                <a href="/"><button>다시 예측하기</button></a>
+                <a href="/">
+                    <button class="primary-btn">
+                        다시 예측하기
+                    </button>
+                </a>
 
-                <button id="copyResultBtn" style="margin-top:14px;">
+                <button id="copyResultBtn"
+                        class="secondary-btn"
+                        style="margin-top:14px;">
                     결과 복사
                 </button>
 
@@ -390,7 +396,8 @@
                     action="{{ url_for('close_room', code=code) }}"
                     style="margin-top:14px;"
                     onsubmit="return confirm('정말 방을 종료하시겠습니까?');">
-                                    <button type="submit" style="background:#444;">
+                                    <button type="submit"
+                                            class="danger-btn">
                         방 종료하기
                     </button>
                 </form>

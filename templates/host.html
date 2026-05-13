@@ -33,8 +33,8 @@
 
 <br><br>
 
-<button class="copy-btn"
-        onclick="copyLink()">
+<button class="secondary-btn"
+        id="copyLinkBtn">
 
     링크 복사
 </button>
@@ -42,18 +42,11 @@
 <br><br>
 
 <a href="{{ url_for('result', code=code) }}">
-    <button class="result-btn">
+    <button class="primary-btn">
         결과 확인하기
     </button>
 </a>
 
-<script>
-function copyLink() {
-    const link = document.getElementById("roomLink");
-    link.select();
-    document.execCommand("copy");
-    alert("링크가 복사되었습니다!");
-}
-</script>
+<script src="{{ url_for('static', filename='js/host.js') }}"></script>
 
 {% endblock %}

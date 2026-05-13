@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}
+결과 분석 중
+{% endblock %}
+
+{% block head %}
+
+<meta http-equiv="refresh" content="2">
+
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/loading.css') }}">
+
+{% endblock %}
+
+{% block content %}
+
+<div class="loading-page">
+
+    <div class="formula f1">T = argmax Σ Sᵢ(T)</div>
+    <div class="formula f2">P(good | x)</div>
+    <div class="formula f3">Sᵢ = f(temp, clothes, activity)</div>
+    <div class="formula f4">ŷ = hθ(x)</div>
+    <div class="formula f5">x₁, x₂, ... , xₙ</div>
+
+    <div>
+        <div class="title">집단 온도 추천 AI</div>
+
+        <h1>참여 데이터를 기다리는 중입니다</h1>
+
+        <div class="loader"></div>
+
+        <div class="status">
+            {{ current }}/{{ target }}명 참여 완료
+        </div>
+
+        <div class="desc">
+            사용자의 체감 온도, 선호 온도, 옷차림, 활동량, 위치 데이터를 수집하고 있습니다.<br>
+            수집된 데이터를 기반으로 <strong>머신러닝 알고리즘</strong>이 집단이 가장 만족할 가능성이 높은 온도를 예측합니다.
+        </div>
+
+        <div class="small">
+            모든 사람이 입력을 완료하면 자동으로 결과 화면으로 이동합니다.
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
