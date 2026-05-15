@@ -4,12 +4,26 @@ from datetime import datetime
 import pandas as pd
 import csv
 import os
-import qrcode
-import base64
-from io import BytesIO
 from flask import Flask, render_template, render_template_string, request, redirect, url_for, session
 from model import predict_with_ai, encoders
 from chart_utils import build_chart_data
+from analysis_utils import build_analysis
+from room_utils import is_duplicate_name
+from error_utils import render_error
+from helpers import (
+    get_clothes_weight,
+    get_activity_weight,
+    get_position_weight,
+    make_room_code,
+    generate_qr_code
+)
+from constants import (
+    ADMIN_KEY,
+    SECRET_KEY,
+    MIN_TEMP,
+    MAX_TEMP,
+    RETRAIN_THRESHOLD
+)
 from rooms import (
     rooms,
     create_room,
@@ -19,52 +33,14 @@ from rooms import (
     get_room_status,
     delete_room
 )
-import random
-import string
 import subprocess
 import threading
  
 app = Flask(__name__)
-app.secret_key = "temp-vote-secret-key"
 
-ADMIN_KEY = "temp-admin-2026"
+app.secret_key = SECRET_KEY
 
 init_db()
-
-def get_clothes_weight(clothes):
-    if clothes == "thin":
-        return 1.2
-    elif clothes == "thick":
-        return 0.8
-    return 1.0
-
-
-def get_activity_weight(activity):
-    if activity == "move":
-        return 1.2
-    return 1.0
-
-
-def get_position_weight(position):
-    if position == "ac":
-        return 1.3
-    elif position == "window":
-        return 1.1
-    return 1.0
-
-def make_room_code():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
-def generate_qr_code(url):
-    qr = qrcode.make(url)
-
-    buffer = BytesIO()
-    qr.save(buffer, format="PNG")
-
-    img_str = base64.b64encode(buffer.getvalue()).decode()
-
-    return img_str
-
 
 def is_feedback_already_saved(code, person_index):
     if not os.path.exists("real_temperature_data.csv"):
@@ -166,10 +142,9 @@ def room(code):
 
     if code not in rooms:
 
-        return render_template(
-            "error.html",
-            title="존재하지 않는 방",
-            message="방 코드가 잘못되었거나 이미 종료된 방입니다."
+        return render_error(
+            "존재하지 않는 방",
+            "방 코드가 잘못되었거나 이미 종료된 방입니다."
         )
 
     joined_key = f"joined_{code}"
@@ -189,12 +164,11 @@ def room(code):
             )
 
         name = request.form["name"].strip()
-        existing_names = [
-            user.get("name", "").strip()
-            for user in get_room_votes(code)
-        ]
-
-        if name in existing_names:
+        
+        if is_duplicate_name(
+            name,
+            get_room_votes(code)
+        ):
 
             return render_template(
                 "error.html",
@@ -203,6 +177,14 @@ def room(code):
             )
 
         temp = int(request.form["temp"])
+
+        if temp < MIN_TEMP or temp > MAX_TEMP:
+
+            return render_error(
+                "잘못된 온도 입력",
+                f"{MIN_TEMP}~{MAX_TEMP}°C 범위만 입력 가능합니다."
+            )
+
         clothes = request.form["clothes"]
         feels = request.form["feels"]
         activity = request.form["activity"]
@@ -254,10 +236,9 @@ def result(code):
 
     if code not in rooms:
 
-        return render_template(
-            "error.html",
-            title="존재하지 않는 방",
-            message="방 코드가 잘못되었거나 이미 종료된 방입니다."
+        return render_error(
+            "존재하지 않는 방",
+            "방 코드가 잘못되었거나 이미 종료된 방입니다."
         )
 
     current, target = get_room_status(code)
@@ -322,64 +303,28 @@ def result(code):
     temp_gap = max(temps) - min(temps)
     avg_temp = round(sum(temps) / len(temps), 1)
 
-    analysis_points = []
+    analysis_points, short_reason, message, advice = build_analysis(
+        cold_count,
+        hot_count,
+        ac_count,
+        temp_gap,
+        avg_temp,
+        expected_satisfaction
+    )
 
-    if cold_count > hot_count:
-        analysis_points.append("추위를 느끼는 사용자가 더 많습니다.")
-
-    elif hot_count > cold_count:
-        analysis_points.append("더위를 느끼는 사용자가 더 많습니다.")
-
-    else:
-        analysis_points.append("추위와 더위 의견이 비슷합니다.")
-
-    if ac_count > 0:
-        analysis_points.append(f"에어컨 근처 사용자가 {ac_count}명 있습니다.")
-
-    if temp_gap >= 4:
-        analysis_points.append(f"사용자 선호 온도 차이가 {temp_gap}°C로 큰 편입니다.")
-    else:
-        analysis_points.append(f"사용자 선호 온도 차이는 {temp_gap}°C입니다.")
-
-    analysis_points.append(f"평균 희망 온도는 {avg_temp}°C입니다.")
-
-    reason = f"춥다고 느낀 사람 {cold_count}명, 덥다고 느낀 사람 {hot_count}명, 에어컨 근처 사용자 {ac_count}명을 반영했습니다. 선호 온도 차이는 {temp_gap}도입니다."
-
-    if cold_count > hot_count:
-        short_reason = "추위를 느끼는 사용자가 더 많아 온도를 높이는 방향을 고려했습니다."
-    elif hot_count > cold_count:
-        short_reason = "더위를 느끼는 사용자가 더 많아 온도를 낮추는 방향을 고려했습니다."
-    else:
-        short_reason = "추위와 더위 의견이 비슷해 가장 균형 잡힌 온도를 선택했습니다."
-
-    if expected_satisfaction < 0.5:
-        message = "선호 차이가 커 일부 사용자 불편 가능"
-
-        if cold_count > hot_count:
-            advice = "추위를 느끼는 사용자가 더 많습니다. 온도를 조금 올리거나, 에어컨 바람을 직접 맞는 사용자의 자리를 조정하는 것이 좋습니다."
-        elif hot_count > cold_count:
-            advice = "더위를 느끼는 사용자가 더 많습니다. 온도를 조금 낮추거나, 더운 사용자가 바람이 잘 닿는 자리로 이동하는 것이 좋습니다."
-        else:
-            advice = "추운 사용자와 더운 사용자가 비슷합니다. 온도 변경보다는 담요, 자리 이동, 바람 방향 조정 같은 보조 조치가 더 적합합니다."
-
-    elif expected_satisfaction < 0.7:
-        message = "대체로 괜찮지만 일부 불편 가능"
-        advice = "추천 온도를 바로 크게 바꾸기보다는 0.5~1°C 정도만 미세 조정하면서 반응을 확인하는 것이 좋습니다."
-
-    else:
-        message = "대부분 사용자 만족 가능"
-        advice = "추천 온도를 적용해도 무리가 적습니다. 다만 시간이 지나면 활동량이나 자리 위치에 따라 체감이 달라질 수 있습니다."
-
-    best_chart_temp = temp_scores.index(max(temp_scores)) + 18
+    best_chart_temp = (
+        temp_scores.index(max(temp_scores))
+        + MIN_TEMP
+    )
 
     chart_points, chart_dots = build_chart_data(temp_scores)
 
     next_temp = result
 
     if cold_count > hot_count:
-        next_temp = min(result + 1, 30)
+        next_temp = min(result + 1, MAX_TEMP)
     elif hot_count > cold_count:
-        next_temp = max(result - 1, 18)
+        next_temp = max(result - 1, MIN_TEMP)
 
     return render_template(
         "result.html",
@@ -437,36 +382,16 @@ def feedback(code):
     def retrain_model():
         subprocess.run(["python", "train_model.py"])
 
-    if len(df) % 10 == 0:
+    if len(df) % RETRAIN_THRESHOLD == 0:
         threading.Thread(target=retrain_model).start()
 
     votes = get_room_votes(code)
     best_temp, expected_satisfaction, temp_scores, predictions = predict_with_ai(votes)
 
-    return render_template_string("""
-    <html>
-    <head>
-    <meta charset="UTF-8">
-    <title>피드백 저장 완료</title>
-    </head>
-    <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
-        <h1>피드백이 저장되었습니다</h1>
-        <p style="color:#aaa;">내 반응 데이터가 저장되었습니다.</p>
-
-        <p style="margin-top:25px; font-size:24px; color:#66ffd1; font-weight:bold;">
-            다음 추천 온도: {{ next_temp }}°C
-        </p>
-
-        <br>
-
-        <a href="/">
-            <button style="padding:14px 28px; background:#2f6df6; color:white; border:none; border-radius:6px;">
-                새 방 만들기
-            </button>
-        </a>
-    </body>
-    </html>
-    """, next_temp=best_temp)
+    return render_template(
+        "feedback_done.html",
+        next_temp=best_temp
+    )
 
 @app.route("/close/<code>", methods=["POST"])
 def close_room(code):
@@ -481,16 +406,11 @@ def admin():
     key = request.args.get("key")
 
     if key != ADMIN_KEY:
-        return render_template_string("""
-        <html>
-        <head><meta charset="UTF-8"></head>
-        <body style="background:#101114; color:white; text-align:center; padding-top:120px;">
-            <h1>관리자 권한이 없습니다</h1>
-            <p style="color:#aaa;">올바른 관리자 키가 필요합니다.</p>
-            <a href="/"><button>메인으로 돌아가기</button></a>
-        </body>
-        </html>
-        """)
+
+        return render_error(
+            "관리자 권한 없음",
+            "올바른 관리자 키가 필요합니다."
+        )
 
     conn = sqlite3.connect("temperature_feedback.db")
     cursor = conn.cursor()
@@ -544,13 +464,16 @@ def admin():
 
         ai_data_count = len(df)
 
-        remain_for_train = 10 - (ai_data_count % 10)
+        remain_for_train = (
+            RETRAIN_THRESHOLD
+            - (ai_data_count % RETRAIN_THRESHOLD)
+        )
 
-        if remain_for_train == 10:
+        if remain_for_train == RETRAIN_THRESHOLD:
             remain_for_train = 0
     else:
         ai_data_count = 0
-        remain_for_train = 10
+        remain_for_train = RETRAIN_THRESHOLD
 
     if os.path.exists("model_accuracy.txt"):
         with open("model_accuracy.txt", "r", encoding="utf-8") as file:

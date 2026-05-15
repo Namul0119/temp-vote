@@ -150,37 +150,21 @@
     </div>
     <div class="satisfaction">예상 만족도 {{ satisfaction }}%</div>
 
-    <div style="
-        width:320px;
-        height:18px;
-        background:#1f2430;
-        border-radius:20px;
-        margin:16px auto 0;
-        overflow:hidden;
-    ">
-        <div style="
-            width:{{ satisfaction }}%;
-            height:100%;
-            background:linear-gradient(90deg, #00e5a8, #62ffd5);
-            box-shadow:0 0 14px rgba(98,255,213,0.5);
-            transition:width 1s ease;
-        ">
+    <div class="progress-wrap">
+        <div class="progress-bar"
+            style="width:{{ satisfaction }}%;">
         </div>
     </div>
 
-    <div style="
-        margin-top:8px;
-        color:#aaa;
-        font-size:14px;
-    ">
+    <div class="ai-confidence">
         AI 확신도 {{ satisfaction }}%
     </div>
 
-    <div style="color:#888; font-size:14px; margin-top:6px;">
+    <div class="ai-desc">
         (AI 예측 기반)
     </div>
 
-    <div style="margin-top:8px; color:#aaa; font-size:15px;">
+    <div class="current-status">
         현재 참여 {{ current }} / {{ target }}명
     </div>
 
@@ -274,137 +258,167 @@
         ★ 최종 추천 온도
     </div>
 
-    <div style="margin-top:20px;">
-        <strong>👥 전체 요약</strong><br><br>
+    <div class="summary-section">
 
-        <div style="
-            background:#1a1f2b;
-            padding:14px;
-            border-radius:10px;
-            line-height:1.7;
-            color:#ddd;
-        ">
-            춥다 {{ cold_percent }}% / 괜찮다 {{ ok_percent }}% / 덥다 {{ hot_percent }}%
+        <strong>👥 전체 요약</strong>
+
+        <div class="summary-box mt-20">
+            춥다 {{ cold_percent }}% /
+            괜찮다 {{ ok_percent }}% /
+            덥다 {{ hot_percent }}%
         </div>
 
-        <details style="margin-top:18px; color:#aaa;">
-            <summary style="cursor:pointer; color:#62ffd5;">개인별 예상 결과 보기</summary>
+        <details class="person-detail">
+
+            <summary>
+                개인별 예상 결과 보기
+            </summary>
 
             {% for r in person_results %}
-            <div style="
-                background:#1a1f2b;
-                padding:10px;
-                margin-top:8px;
-                border-radius:8px;
-                text-align:center;
-            ">
+
+            <div class="person-result-item">
                 {{ r }}
             </div>
+
             {% endfor %}
+
         </details>
+
     </div>
 
     <!-- 기존 설명 -->
-    <div class="message" style="max-width:620px; margin:28px auto 0;">
-        <div style="font-size:18px; font-weight:bold; color:#fff; margin-bottom:10px;">
+    <div class="analysis-card">
+
+        <div class="analysis-title">
             결과 해석
         </div>
 
-        <div style="font-size:17px; line-height:1.7; color:#ddd;">
+        <div class="analysis-text">
             {{ message }}
         </div>
 
-        <div style="margin-top:14px; font-size:16px; line-height:1.7; color:#62ffd5;">
+        <div class="analysis-advice">
             {{ advice }}
         </div>
 
-        <div style="
-            margin-top:20px;
-            padding:14px 18px;
-            background:#1a1f2b;
-            border-radius:10px;
-            color:#bbb;
-            font-size:14px;
-            line-height:1.6;
-        ">
-            <strong style="color:#fff;">분석 근거</strong><br>
+        <div class="analysis-reason-box">
+
+            <strong>분석 근거</strong><br>
             {{ reason }}
 
-            <div style="margin-top:12px;">
+            <div class="mt-20">
                 {% for point in analysis_points %}
-                    <div style="margin-top:6px;">✔ {{ point }}</div>
+                    <div class="analysis-check">
+                        ✔ {{ point }}
+                    </div>
                 {% endfor %}
             </div>
+
         </div>
+
     </div>
 
     {% if code %}
-    <div style="margin-top:35px;">
-        <p style="margin-top:24px; color:#66ffd1; font-size:16px; font-weight:bold;">
+    <div class="feedback-section">
+
+        <p class="feedback-next-temp">
             피드백을 반영하면 다음 추천 온도는 {{ next_temp }}°C입니다.
         </p>
+
         <h3>내 추천 온도 피드백</h3>
 
         {% if my_result and not is_host %}
-        <form method="post" action="{{ url_for('feedback', code=code) }}">
-            <div style="
-                background:#1a1f2b;
-                padding:15px;
-                margin-bottom:12px;
-                border-radius:10px;
-                text-align:left;
-            ">
-                <strong>{{ my_name }}</strong><br>
-                <span style="color:#aaa;">{{ my_result }}</span><br><br>
 
-                <label>
-                    <input type="radio" name="feedback" value="too_cold" required>
-                    추웠어요
-                </label>
+        <form method="post"
+            action="{{ url_for('feedback', code=code) }}">
 
-                <label style="margin-left:15px;">
-                    <input type="radio" name="feedback" value="good">
-                    괜찮았어요
-                </label>
+            <div class="feedback-card">
 
-                <label style="margin-left:15px;">
-                    <input type="radio" name="feedback" value="too_hot">
-                    더웠어요
-                </label>
+                <div class="feedback-user">
+                    {{ my_name }}
+                </div>
+
+                <div class="feedback-result">
+                    {{ my_result }}
+                </div>
+
+                <div class="feedback-options">
+
+                    <label>
+                        <input type="radio"
+                            name="feedback"
+                            value="too_cold"
+                            required>
+                        추웠어요
+                    </label>
+
+                    <label>
+                        <input type="radio"
+                            name="feedback"
+                            value="good">
+                        괜찮았어요
+                    </label>
+
+                    <label>
+                        <input type="radio"
+                            name="feedback"
+                            value="too_hot">
+                        더웠어요
+                    </label>
+
+                </div>
+
             </div>
 
-            <button type="submit">피드백 저장하기</button>
+            <button type="submit"
+                    class="primary-btn action-btn">
+                피드백 저장하기
+            </button>
+
         </form>
+
         {% else %}
-        <p style="color:#aaa;">방장은 전체 결과만 확인할 수 있습니다.</p>
+
+        <p class="feedback-empty">
+            방장은 전체 결과만 확인할 수 있습니다.
+        </p>
+
         {% endif %}
 
-            <br><br>
-                <a href="/">
-                    <button class="primary-btn">
-                        다시 예측하기
-                    </button>
-                </a>
+        <div class="action-row">
 
-                <button id="copyResultBtn"
-                        class="secondary-btn"
-                        style="margin-top:14px;">
-                    결과 복사
+            <a href="/">
+                <button class="primary-btn action-btn">
+                    다시 예측하기
                 </button>
+            </a>
 
-                <form method="post"
-                    action="{{ url_for('close_room', code=code) }}"
-                    style="margin-top:14px;"
-                    onsubmit="return confirm('정말 방을 종료하시겠습니까?');">
-                                    <button type="submit"
-                                            class="danger-btn">
-                        방 종료하기
-                    </button>
-                </form>
-            </div>
-            {% endif %}
+            <button id="copyResultBtn"
+                    class="secondary-btn action-btn">
+                결과 복사
+            </button>
+
         </div>
+
+        <form method="post"
+            action="{{ url_for('close_room', code=code) }}"
+            class="mt-20"
+            onsubmit="return confirm('정말 방을 종료하시겠습니까?');">
+
+            <button type="submit"
+                    class="danger-area">
+                방 종료하기
+            </button>
+
+        </form>
+
+    </div>
     {% endif %}
-    <script src="{{ url_for('static', filename='js/result.js') }}"></script>
+
+</div>
+
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/result.js') }}"></script>
 
 {% endblock %}

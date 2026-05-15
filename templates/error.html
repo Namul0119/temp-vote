@@ -6,36 +6,29 @@
 
 {% block content %}
 
-<div style="
-background:#101114;
-color:white;
-font-family:Arial;
-text-align:center;
-padding-top:120px;
-height:100vh;
-">
+<div class="center-page">
 
-    <h1>{{ title }}</h1>
+    <div class="ui-card">
 
-    <p style="
-    color:#aaa;
-    margin-top:14px;
-    font-size:17px;
-    ">
-        {{ message }}
-    </p>
+        <h1 class="ui-title">
+            {{ title }}
+        </h1>
 
-    <a href="/"
-       style="text-decoration:none;">
+        <p class="ui-subtitle">
+            {{ message }}
+        </p>
 
-        <button class="primary-btn"
-                style="margin-top:28px;">
+        <div class="mt-30">
 
-            메인으로 돌아가기
+            <a href="/" style="text-decoration:none;">
+                <button class="primary-btn">
+                    메인으로 돌아가기
+                </button>
+            </a>
 
-        </button>
+        </div>
 
-    </a>
+    </div>
 
 </div>
 

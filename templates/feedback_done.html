@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}
+피드백 저장 완료
+{% endblock %}
+
+{% block content %}
+
+<div class="center-page">
+
+    <div class="ui-card">
+
+        <h1 class="ui-title">
+            피드백이 저장되었습니다
+        </h1>
+
+        <p class="ui-subtitle">
+            내 반응 데이터가 저장되었습니다.
+        </p>
+
+        <p class="ui-big-text ui-highlight">
+            다음 추천 온도: {{ next_temp }}°C
+        </p>
+
+        <div class="mt-30">
+
+            <a href="/">
+                <button class="primary-btn">
+                    새 방 만들기
+                </button>
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

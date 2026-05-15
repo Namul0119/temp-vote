@@ -11,27 +11,37 @@
 
 {% block content %}
 
-<div class="create-container">
+<div class="center-page">
 
-    <h1>집단 온도 추천 AI</h1>
+    <div class="ui-card">
 
-    <p>몇 명이 투표할지 정해주세요.</p>
+        <h1 class="ui-title">
+            집단 온도 추천 AI
+        </h1>
 
-    <form method="post">
+        <p class="ui-subtitle">
+            몇 명이 투표할지 정해주세요.
+        </p>
 
-        <input type="number"
-               name="target_count"
-               min="2"
-               max="30"
-               value="5"
-               required>
+        <form method="post" class="mt-30">
 
-        <button type="submit"
-                class="primary-btn">
-            방 만들기
-        </button>
+            <input type="number"
+                   name="target_count"
+                   min="2"
+                   max="30"
+                   value="5"
+                   required>
 
-    </form>
+            <div class="mt-20">
+                <button type="submit"
+                        class="primary-btn">
+                    방 만들기
+                </button>
+            </div>
+
+        </form>
+
+    </div>
 
 </div>
 

@@ -266,3 +266,252 @@ button {
     text-align: center;
     border: 1px solid rgba(255, 100, 100, 0.3);
 }
+
+.progress-wrap {
+
+    width: 320px;
+    height: 18px;
+
+    background: #1f2430;
+
+    border-radius: 20px;
+
+    margin: 16px auto 0;
+
+    overflow: hidden;
+}
+
+.progress-bar {
+
+    height: 100%;
+
+    background:
+        linear-gradient(
+            90deg,
+            #00e5a8,
+            #62ffd5
+        );
+
+    box-shadow:
+        0 0 14px rgba(98,255,213,0.5);
+
+    transition: width 1s ease;
+}
+
+.ai-confidence {
+
+    margin-top: 8px;
+
+    color: #aaa;
+
+    font-size: 14px;
+}
+
+.ai-desc {
+
+    color: #888;
+
+    font-size: 14px;
+
+    margin-top: 6px;
+}
+
+.current-status {
+
+    margin-top: 8px;
+
+    color: #aaa;
+
+    font-size: 15px;
+}
+
+.analysis-card {
+
+    max-width: 620px;
+
+    margin: 28px auto 0;
+}
+
+.analysis-title {
+
+    font-size: 20px;
+
+    font-weight: bold;
+
+    color: white;
+
+    margin-bottom: 12px;
+}
+
+.analysis-text {
+
+    font-size: 17px;
+
+    line-height: 1.8;
+
+    color: #ddd;
+}
+
+.analysis-advice {
+
+    margin-top: 14px;
+
+    font-size: 16px;
+
+    line-height: 1.8;
+
+    color: #62ffd5;
+}
+
+.analysis-reason-box {
+
+    margin-top: 20px;
+
+    padding: 16px 18px;
+
+    background: #1a1f2b;
+
+    border-radius: 12px;
+
+    color: #bbb;
+
+    font-size: 14px;
+
+    line-height: 1.7;
+}
+
+.analysis-check {
+
+    margin-top: 6px;
+}
+
+.summary-section {
+
+    margin-top: 24px;
+}
+
+.summary-box {
+
+    background: #1a1f2b;
+
+    padding: 16px;
+
+    border-radius: 12px;
+
+    line-height: 1.7;
+
+    color: #ddd;
+}
+
+.person-detail {
+
+    margin-top: 18px;
+
+    color: #aaa;
+}
+
+.person-detail summary {
+
+    cursor: pointer;
+
+    color: #62ffd5;
+
+    font-weight: bold;
+}
+
+.person-result-item {
+
+    background: #1a1f2b;
+
+    padding: 12px;
+
+    margin-top: 8px;
+
+    border-radius: 10px;
+
+    text-align: center;
+}
+
+.feedback-section {
+
+    margin-top: 35px;
+}
+
+.feedback-next-temp {
+
+    margin-top: 24px;
+
+    color: #66ffd1;
+
+    font-size: 16px;
+
+    font-weight: bold;
+}
+
+.feedback-card {
+
+    background: #1a1f2b;
+
+    padding: 18px;
+
+    margin-bottom: 14px;
+
+    border-radius: 12px;
+
+    text-align: left;
+}
+
+.feedback-user {
+
+    font-weight: bold;
+
+    color: white;
+}
+
+.feedback-result {
+
+    color: #aaa;
+
+    margin-top: 6px;
+}
+
+.feedback-options {
+
+    margin-top: 16px;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 18px;
+}
+
+.feedback-empty {
+
+    color: #aaa;
+
+    margin-top: 12px;
+}
+
+.action-row {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 14px;
+
+    margin-top: 20px;
+
+    flex-wrap: wrap;
+}
+
+.action-btn {
+
+    min-width: 160px;
+}
+
+.danger-area {
+
+    margin-top: 28px;
+}

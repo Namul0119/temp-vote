@@ -60,3 +60,27 @@ button:active {
     font-size:18px;
     color:#62ffd5;
 }
+
+.room-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.room-form input,
+.room-form select {
+    width: 100%;
+    padding: 14px 16px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #11151f;
+    color: white;
+
+    font-size: 15px;
+}
+
+.room-form input::placeholder {
+    color: #888;
+}

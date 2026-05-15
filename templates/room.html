@@ -11,72 +11,80 @@
 
 {% block content %}
 
-<div class="container">
+<div class="center-page">
 
-    <h1>정보 입력</h1>
+    <div class="ui-card">
 
-    <div class="subtitle">
-        현재 상태를 입력해주세요
+        <h1 class="ui-title">
+            정보 입력
+        </h1>
+
+        <p class="ui-subtitle">
+            현재 상태를 입력해주세요.
+        </p>
+
+        <p class="ui-big-text ui-highlight">
+            {{ current }}/{{ target }}명 참여 완료
+        </p>
+
+        <form method="post" class="room-form mt-30">
+
+            <input type="text"
+                   name="name"
+                   placeholder="이름 또는 닉네임"
+                   required>
+
+            <select name="sex">
+                <option value="male">남성</option>
+                <option value="female">여성</option>
+            </select>
+
+            <select name="age_group">
+                <option value="teen">청소년</option>
+                <option value="adult">성인</option>
+                <option value="senior">노년층</option>
+            </select>
+
+            <input type="number"
+                   name="temp"
+                   min="18"
+                   max="30"
+                   placeholder="원하는 온도 (18~30)"
+                   required>
+
+            <select name="clothes">
+                <option value="thin">얇음</option>
+                <option value="normal">보통</option>
+                <option value="thick">두꺼움</option>
+            </select>
+
+            <select name="feels">
+                <option value="cold">춥다</option>
+                <option value="ok">괜찮다</option>
+                <option value="hot">덥다</option>
+            </select>
+
+            <select name="activity">
+                <option value="still">가만히 있음</option>
+                <option value="move">조금 움직임</option>
+            </select>
+
+            <select name="position">
+                <option value="center">중앙</option>
+                <option value="window">창가</option>
+                <option value="ac">에어컨 근처</option>
+            </select>
+
+            <div class="mt-30">
+                <button type="submit"
+                        class="primary-btn">
+                    입력 완료
+                </button>
+            </div>
+
+        </form>
+
     </div>
-
-    <div class="status">
-        {{ current }}/{{ target }}명 참여 완료
-    </div>
-
-    <form method="post">
-
-        <input type="text"
-               name="name"
-               placeholder="이름 또는 닉네임"
-               required>
-
-        <select name="sex">
-            <option value="male">남성</option>
-            <option value="female">여성</option>
-        </select>
-
-        <select name="age_group">
-            <option value="teen">청소년</option>
-            <option value="adult">성인</option>
-            <option value="senior">노년층</option>
-        </select>
-
-        <input type="number"
-               name="temp"
-               min="18"
-               max="30"
-               placeholder="원하는 온도 (18~30)"
-               required>
-
-        <select name="clothes">
-            <option value="thin">얇음</option>
-            <option value="normal">보통</option>
-            <option value="thick">두꺼움</option>
-        </select>
-
-        <select name="feels">
-            <option value="cold">춥다</option>
-            <option value="ok">괜찮다</option>
-            <option value="hot">덥다</option>
-        </select>
-
-        <select name="activity">
-            <option value="still">가만히 있음</option>
-            <option value="move">조금 움직임</option>
-        </select>
-
-        <select name="position">
-            <option value="center">중앙</option>
-            <option value="window">창가</option>
-            <option value="ac">에어컨 근처</option>
-        </select>
-
-        <button type="submit"
-                class="primary-btn">
-            입력 완료
-        </button>
-
-    </form>
 
 </div>
 
