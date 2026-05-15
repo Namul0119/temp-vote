@@ -125,7 +125,11 @@ def host(code):
     if current >= target:
         return redirect(url_for("result", code=code))
 
-    room_url = f"http://192.168.219.111:5000/room/{code}"
+    room_url = url_for(
+        "room",
+        code=code,
+        _external=True
+    )
     qr_image = generate_qr_code(room_url)
 
     return render_template(

@@ -1,4 +1,16 @@
 __pycache__/
 *.pyc
-*.pkl
+
+# AI 모델 파일은 배포에 필요하므로 제외하지 않음
+# *.pkl
+
 real_temperature_data.csv
+
+.env
+
+venv/
+.venv/
+
+.vscode/
+
+*.db
